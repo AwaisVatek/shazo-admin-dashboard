@@ -34,3 +34,4 @@ export function isValidPakistanPhone(phone: string): boolean {
   const normalized = normalizePakistanPhone(phone);
   return /^923\d{9}$/.test(normalized);
 }
+

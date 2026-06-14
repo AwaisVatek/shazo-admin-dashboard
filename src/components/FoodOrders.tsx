@@ -32,7 +32,20 @@ export const FoodOrders: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/food-orders');
       if (data && data.length > 0) {
-        setOrders(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          restaurantName: item.restaurant_name || item.restaurant?.name || item.restaurant || '-',
+          customerName: item.customer_name || item.customer?.full_name || item.customer || item.full_name || '-',
+          riderName: item.rider_name || item.driver_name || item.rider?.full_name || item.rider || '-',
+          itemsSummary: item.items_summary || item.items || '-',
+          status: item.status || 'received',
+          subtotal: Number(item.subtotal || item.total_amount || 0),
+          deliveryFee: Number(item.delivery_fee || item.fee || 0),
+          orderTotal: Number(item.order_total || item.total_amount || item.total_fare || 0),
+          paymentMethod: item.payment_method || item.payment_type || 'cash',
+          timestamp: item.timestamp || (item.created_at ? new Date(item.created_at).toLocaleString() : '-')
+        }));
+        setOrders(mappedData);
       } else {
         setOrders([]);
         setErrorStatus('No data available.');
@@ -229,3 +242,4 @@ export const FoodOrders: React.FC = () => {
     </div>
   );
 };
+

@@ -30,7 +30,19 @@ export const AmbulanceBookings: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/ambulance-bookings');
       if (data && data.length > 0) {
-        setBookings(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          patientName: item.patient_name || item.customer?.full_name || item.customer_name || '-',
+          contactNo: item.contact_no || item.phone || item.customer?.phone || '-',
+          emergencyType: item.emergency_type || item.type || 'Standard',
+          pickup: item.pickup_address || item.pickup_location || '-',
+          destination: item.destination_address || item.hospital_address || item.dropoff_address || '-',
+          status: item.status || 'pending',
+          driverName: item.driver_name || item.rider?.full_name || item.rider_name || '-',
+          vehiclePlate: item.vehicle_plate || item.vehicle_number || '-',
+          estimatedFare: Number(item.estimated_fare || item.fare || item.total_fare || 0)
+        }));
+        setBookings(mappedData);
       } else {
         setBookings([]);
         setErrorStatus('No data available.');
@@ -206,3 +218,4 @@ export const AmbulanceBookings: React.FC = () => {
     </div>
   );
 };
+

@@ -199,3 +199,4 @@ export const SafetyReports: React.FC = () => {
     </div>
   );
 };
+

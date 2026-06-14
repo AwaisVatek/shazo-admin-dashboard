@@ -31,7 +31,19 @@ export const RidersList: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/riders');
       if (data && data.length > 0) {
-        setRiders(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          name: item.rider_name || item.driver_name || item.rider?.full_name || item.full_name || item.rider || item.rider_id || '-',
+          phone: item.rider_phone || item.driver_phone || item.rider?.phone || item.phone || '-',
+          status: item.verification_status || item.status || (item.is_verified ? 'verified' : 'pending'),
+          onlineStatus: item.is_online ? 'online' : 'offline',
+          services: item.services || (item.vehicle_type ? [item.vehicle_type] : []),
+          vehicleNo: item.vehicle_number || item.vehicle_plate || '-',
+          vehicleModel: item.vehicle_model || item.vehicle_make || '-',
+          walletBalance: Number(item.walletBalance || item.balance || 0),
+          rating: Number(item.rating || 5.0)
+        }));
+        setRiders(mappedData);
       } else {
         setRiders([]);
         setErrorStatus('No data available.');
@@ -300,3 +312,4 @@ export const RidersList: React.FC = () => {
     </div>
   );
 };
+

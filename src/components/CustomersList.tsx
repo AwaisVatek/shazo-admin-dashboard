@@ -29,7 +29,17 @@ export const CustomersList: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/customers');
       if (data && data.length > 0) {
-        setCustomers(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          name: item.customer_name || item.customer?.full_name || item.customer || item.full_name || item.customer_id || '-',
+          phone: item.customer_phone || item.phone || item.customer?.phone || '-',
+          email: item.email || '-',
+          status: item.status || (item.is_verified === false ? 'blocked' : 'active'),
+          rating: item.rating || 5.0,
+          ridesCount: item.ridesCount || item.total_rides || 0,
+          joinedAt: item.joinedAt || (item.created_at ? new Date(item.created_at).toLocaleDateString() : '-')
+        }));
+        setCustomers(mappedData);
       } else {
         setCustomers([]);
         setErrorStatus('No data available.');
@@ -246,3 +256,4 @@ export const CustomersList: React.FC = () => {
     </div>
   );
 };
+

@@ -57,3 +57,4 @@ export function updateFaviconElement(href: string): void {
     console.warn('Failed to update favicon element:', err);
   }
 }
+

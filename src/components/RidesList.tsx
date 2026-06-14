@@ -32,7 +32,20 @@ export const RidesList: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/rides');
       if (data && data.length > 0) {
-        setRides(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          customerName: item.customer_name || item.customer?.full_name || item.customer || item.full_name || '-',
+          riderName: item.rider_name || item.driver_name || item.rider?.full_name || item.rider || '-',
+          vehicleType: item.vehicle_type || item.service_type || 'car',
+          pickup: item.pickup_address || item.pickup_location || item.route?.pickup || '-',
+          dropoff: item.dropoff_address || item.dropoff_location || item.route?.dropoff || '-',
+          status: item.status || 'pending',
+          fare: Number(item.total_fare || item.fare || item.total_amount || 0),
+          commission: Number(item.commission_amount || item.commission || 0),
+          paymentMethod: item.payment_method || item.payment_type || 'cash',
+          createdAt: item.created_at ? new Date(item.created_at).toLocaleString() : '-'
+        }));
+        setRides(mappedData);
       } else {
         setRides([]);
         setErrorStatus('No data available.');
@@ -223,3 +236,4 @@ export const RidesList: React.FC = () => {
     </div>
   );
 };
+

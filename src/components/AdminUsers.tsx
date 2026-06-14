@@ -27,7 +27,14 @@ export const AdminUsers: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/staff-users');
       if (data && data.length > 0) {
-        setUsers(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          name: item.name || item.full_name || '-',
+          email: item.email || '-',
+          role: item.role || 'support_agent',
+          status: item.status || (item.is_active === false ? 'inactive' : 'active')
+        }));
+        setUsers(mappedData);
       } else {
         setUsers([]);
         setErrorStatus('No data available.');
@@ -204,3 +211,4 @@ export const AdminUsers: React.FC = () => {
     </div>
   );
 };
+

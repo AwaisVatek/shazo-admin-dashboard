@@ -21,24 +21,55 @@ export const SettingsFares: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
 
+  const ALL_SERVICES = [
+    { key: 'bike', label: 'Bike' },
+    { key: 'rickshaw', label: 'Rickshaw / 3-Wheeler' },
+    { key: 'car_mini', label: 'Car Mini' },
+    { key: 'car_ac', label: 'AC Ride' },
+    { key: 'car_luxury', label: 'Luxury Ride' },
+    { key: 'food_delivery', label: 'Food Delivery' },
+    { key: 'ambulance', label: 'Ambulance' }
+  ];
+
   const loadFaresData = async () => {
     try {
       setLoading(true);
       setErrorStatus(null);
       const data = await api.get('/api/admin/settings/fares');
-      if (data && data.length > 0) {
-        setFares(data);
-      } else {
-        setFares([]);
-        setErrorStatus('No data available.');
-      }
+      
+      const loadedFares = data && data.length > 0 ? data : [];
+      
+      // Ensure all services have a card
+      const completeFares = ALL_SERVICES.map(svc => {
+        const existing = loadedFares.find((f: any) => f.serviceType === svc.key || f.service_type === svc.key);
+        return {
+          serviceType: svc.key,
+          serviceLabel: svc.label,
+          baseFare: Number(existing?.baseFare || existing?.base_fare || 0),
+          perKmRate: Number(existing?.perKmRate || existing?.per_km_rate || 0),
+          perMinRate: Number(existing?.perMinRate || existing?.per_minute_rate || 0),
+          minimumFare: Number(existing?.minimumFare || existing?.minimum_fare || 0),
+          peakHourMultiplier: Number(existing?.peakHourMultiplier || existing?.peak_time_multiplier || 1),
+          cancelFee: Number(existing?.cancelFee || existing?.cancellation_fee || 0),
+        };
+      });
+      setFares(completeFares);
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
         setErrorStatus('Backend endpoint not implemented yet.');
       } else {
         setErrorStatus('Unable to load data from backend.');
       }
-      setFares([]);
+      setFares(ALL_SERVICES.map(svc => ({
+          serviceType: svc.key,
+          serviceLabel: svc.label,
+          baseFare: 0,
+          perKmRate: 0,
+          perMinRate: 0,
+          minimumFare: 0,
+          peakHourMultiplier: 1,
+          cancelFee: 0,
+      })) as any);
     } finally {
       setLoading(false);
     }
@@ -48,7 +79,7 @@ export const SettingsFares: React.FC = () => {
     loadFaresData();
   }, []);
 
-  const handleUpdateFare = (index: number, field: keyof ServiceFare, value: number) => {
+  const handleUpdateFare = (index: number, field: string, value: number) => {
     setFares(prev => {
       const copy = [...prev];
       copy[index] = { ...copy[index], [field]: value };
@@ -101,114 +132,110 @@ export const SettingsFares: React.FC = () => {
         </div>
       )}
 
-      {fares.length === 0 ? (
-        <div className="bg-brand-navy-800 border border-slate-800 p-8 rounded-xl text-center text-slate-400 text-sm">
-          No data available.
-        </div>
-      ) : (
-        <form onSubmit={handleSave} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {fares.map((fare, idx) => {
-              const isAmbulance = fare.serviceType === 'ambulance';
-              return (
-                <div key={fare.serviceType} className="bg-brand-navy-800 rounded-xl border border-slate-850 p-5 space-y-4">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <div className="flex items-center space-x-2">
-                      {fare.serviceType === 'bike' && <Bike className="w-5 h-5 text-indigo-400" />}
-                      {fare.serviceType === 'car' && <Car className="w-5 h-5 text-emerald-400" />}
-                      {fare.serviceType === 'ambulance' && <Shield className="w-5 h-5 text-rose-500" />}
-                      {fare.serviceType === 'food' && <Flame className="w-5 h-5 text-amber-500" />}
-                      <span className="text-white font-extrabold uppercase tracking-wide text-sm">Shazo {fare.serviceType}</span>
-                    </div>
-                    <span className="text-[10px] font-mono bg-slate-900 border border-slate-850 text-slate-500 px-2 py-0.5 rounded uppercase">
-                      PKR CURRENCY
-                    </span>
+      <form onSubmit={handleSave} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {fares.map((fare: any, idx) => {
+            const isAmbulance = fare.serviceType === 'ambulance';
+            return (
+              <div key={fare.serviceType} className="bg-brand-navy-800 rounded-xl border border-slate-850 p-5 space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                  <div className="flex items-center space-x-2">
+                    {fare.serviceType.includes('bike') && <Bike className="w-5 h-5 text-indigo-400" />}
+                    {fare.serviceType.includes('car') && <Car className="w-5 h-5 text-emerald-400" />}
+                    {fare.serviceType.includes('rickshaw') && <Car className="w-5 h-5 text-amber-500" />}
+                    {fare.serviceType === 'ambulance' && <Shield className="w-5 h-5 text-rose-500" />}
+                    {fare.serviceType === 'food_delivery' && <Flame className="w-5 h-5 text-amber-500" />}
+                    <span className="text-white font-extrabold tracking-wide text-sm">{fare.serviceLabel} Fare Settings</span>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3.5 text-xs">
-                    <div>
-                      <label className="text-slate-500 font-bold block mb-1">Base Flag Drop Fee</label>
-                      <input
-                        type="number"
-                        value={fare.baseFare}
-                        onChange={(e) => handleUpdateFare(idx, 'baseFare', Number(e.target.value))}
-                        className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-700"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-slate-500 font-bold block mb-1">Per Kilometer Rate</label>
-                      <input
-                        type="number"
-                        value={fare.perKmRate}
-                        onChange={(e) => handleUpdateFare(idx, 'perKmRate', Number(e.target.value))}
-                        className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-slate-500 font-bold block mb-1">Per Min Charge (Distance)</label>
-                      <input
-                        type="number"
-                        disabled={isAmbulance}
-                        value={fare.perMinRate}
-                        onChange={(e) => handleUpdateFare(idx, 'perMinRate', Number(e.target.value))}
-                        className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705 disabled:opacity-40"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-slate-500 font-bold block mb-1">Guarantee Min Fare</label>
-                      <input
-                        type="number"
-                        value={fare.minimumFare}
-                        onChange={(e) => handleUpdateFare(idx, 'minimumFare', Number(e.target.value))}
-                        className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-slate-500 font-bold block mb-1">Peak-Time Multiplier</label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={fare.peakHourMultiplier}
-                        onChange={(e) => handleUpdateFare(idx, 'peakHourMultiplier', Number(e.target.value))}
-                        className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-slate-500 font-bold block mb-1">Cancellation Penalty</label>
-                      <input
-                        type="number"
-                        value={fare.cancelFee}
-                        onChange={(e) => handleUpdateFare(idx, 'cancelFee', Number(e.target.value))}
-                        className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
-                      />
-                    </div>
-                  </div>
-
-                  {isAmbulance && (
-                    <div className="bg-rose-500/5 border border-rose-500/10 p-2.5 rounded text-[11px] text-rose-400">
-                      Reminder: Do not attach free campaign multipliers or discount coupons to this emergency vehicle settings.
-                    </div>
-                  )}
+                  <span className="text-[10px] font-mono bg-slate-900 border border-slate-850 text-slate-500 px-2 py-0.5 rounded uppercase">
+                    PKR CURRENCY
+                  </span>
                 </div>
-              );
-            })}
-          </div>
 
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              className="bg-emerald-500 hover:bg-emerald-600 text-brand-navy-950 font-black py-2.5 px-8 rounded-lg text-xs uppercase tracking-wider flex items-center shadow-lg"
-            >
-              <Save className="w-4.5 h-4.5 mr-2" /> Commit Fare Multipliers Globally
-            </button>
-          </div>
-        </form>
-      )}
+                <div className="grid grid-cols-2 gap-3.5 text-xs">
+                  <div>
+                    <label className="text-slate-500 font-bold block mb-1">Base Flag Drop Fee</label>
+                    <input
+                      type="number"
+                      value={fare.baseFare}
+                      onChange={(e) => handleUpdateFare(idx, 'baseFare', Number(e.target.value))}
+                      className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 font-bold block mb-1">Per Kilometer Rate</label>
+                    <input
+                      type="number"
+                      value={fare.perKmRate}
+                      onChange={(e) => handleUpdateFare(idx, 'perKmRate', Number(e.target.value))}
+                      className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 font-bold block mb-1">Per Min Charge (Distance)</label>
+                    <input
+                      type="number"
+                      disabled={isAmbulance}
+                      value={fare.perMinRate}
+                      onChange={(e) => handleUpdateFare(idx, 'perMinRate', Number(e.target.value))}
+                      className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705 disabled:opacity-40"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 font-bold block mb-1">Guarantee Min Fare</label>
+                    <input
+                      type="number"
+                      value={fare.minimumFare}
+                      onChange={(e) => handleUpdateFare(idx, 'minimumFare', Number(e.target.value))}
+                      className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 font-bold block mb-1">Peak-Time Multiplier</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={fare.peakHourMultiplier}
+                      onChange={(e) => handleUpdateFare(idx, 'peakHourMultiplier', Number(e.target.value))}
+                      className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 font-bold block mb-1">Cancellation Penalty</label>
+                    <input
+                      type="number"
+                      value={fare.cancelFee}
+                      onChange={(e) => handleUpdateFare(idx, 'cancelFee', Number(e.target.value))}
+                      className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-slate-705"
+                    />
+                  </div>
+                </div>
+
+                {isAmbulance && (
+                  <div className="bg-rose-500/5 border border-rose-500/10 p-2.5 rounded text-[11px] text-rose-400">
+                    Reminder: Do not attach free campaign multipliers or discount coupons to this emergency vehicle settings.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            type="submit"
+            className="bg-emerald-500 hover:bg-emerald-600 text-brand-navy-950 font-black py-2.5 px-8 rounded-lg text-xs uppercase tracking-wider flex items-center shadow-lg"
+          >
+            <Save className="w-4.5 h-4.5 mr-2" /> Commit Fare Multipliers Globally
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
+

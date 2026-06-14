@@ -31,7 +31,16 @@ export const FinanceModule: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/finance/topups');
       if (data && data.length > 0) {
-        setTopups(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          riderName: item.rider_name || item.rider?.full_name || item.full_name || '-',
+          amount: Number(item.amount || 0),
+          paymentChannel: item.payment_channel || item.payment_method || item.channel || 'bank_transfer',
+          referenceNo: item.reference_no || item.reference_number || item.trx_id || '-',
+          status: item.status || 'pending',
+          timestamp: item.timestamp || (item.created_at ? new Date(item.created_at).toLocaleString() : '-')
+        }));
+        setTopups(mappedData);
       } else {
         setTopups([]);
         setErrorStatus('No data available.');
@@ -269,3 +278,4 @@ export const FinanceModule: React.FC = () => {
     </div>
   );
 };
+

@@ -67,3 +67,4 @@ export const ShazoLogo: React.FC<ShazoLogoProps> = ({
     />
   );
 };
+

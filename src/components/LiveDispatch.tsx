@@ -4,10 +4,17 @@ import {
   Navigation, User, Bike, Car, Flame, Shield, MapPin, 
   Send, AlertCircle, RefreshCw, XCircle, Settings 
 } from 'lucide-react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-const API_KEY = import.meta.env.VITE_MAPS_API_KEY || '';
-const hasValidKey = Boolean(API_KEY) && API_KEY !== 'replace_with_shazo_frontend_maps_key';
+// Fix Leaflet's default icon path issues with webpack/vite
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface DispatchRequest {
   id: string;
@@ -28,27 +35,25 @@ export const LiveDispatch: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [mapAuthError, setMapAuthError] = useState<boolean>(false);
-
-  // Hook global Google Maps authentication failure handler
-  useEffect(() => {
-    (window as any).gm_authFailure = () => {
-      console.warn("Google Maps credentials rejected, RefererNotAllowedMapError, or limit reached.");
-      setMapAuthError(true);
-    };
-    return () => {
-      try {
-        delete (window as any).gm_authFailure;
-      } catch (e) {}
-    };
-  }, []);
+  // Leaflet does not require auth handling
   const loadData = async () => {
     try {
       setLoading(true);
       setErrorStatus(null);
       const activeData = await api.get('/api/dispatch/active');
       if (activeData && activeData.length > 0) {
-        setRequests(activeData);
+        const mappedData = activeData.map((item: any) => ({
+          id: item.id || '-',
+          customerName: item.customer_name || item.customer?.full_name || item.customer || item.full_name || '-',
+          serviceType: item.service_type || item.service || 'car',
+          status: item.status || 'pending_rider_match',
+          pickupAddress: item.pickup_address || item.pickup_location || item.route?.pickup || '-',
+          dropoffAddress: item.dropoff_address || item.dropoff_location || item.route?.dropoff || '-',
+          timestamp: item.timestamp || (item.created_at ? new Date(item.created_at).toLocaleString() : '-'),
+          riderId: item.rider_id || item.driver_id || undefined,
+          riderName: item.rider_name || item.driver_name || item.rider?.full_name || item.rider || undefined
+        }));
+        setRequests(mappedData);
       } else {
         setRequests([]);
         setErrorStatus('No data available.');
@@ -66,7 +71,14 @@ export const LiveDispatch: React.FC = () => {
 
     try {
       const riders = await api.get('/api/maps/nearby-riders?lat=24.8607&lng=67.0011');
-      setNearbyRiders(riders || []);
+      const mappedRiders = (riders || []).map((r: any) => ({
+        id: r.id || r.rider_id || '-',
+        name: r.name || r.rider_name || r.full_name || '-',
+        service: r.service || r.service_type || 'car',
+        lat: Number(r.lat || r.current_lat || 24.8607),
+        lng: Number(r.lng || r.current_lng || 67.0011)
+      }));
+      setNearbyRiders(mappedRiders);
     } catch {
       setNearbyRiders([]);
     }
@@ -249,60 +261,24 @@ export const LiveDispatch: React.FC = () => {
         )}
 
         {/* Live coordinate tracking canvas representation */}
-        <div className="bg-brand-navy-800 rounded-xl border border-slate-800 overflow-hidden relative" style={{ height: '360px' }}>
-          {hasValidKey && !mapAuthError ? (
-            <APIProvider apiKey={API_KEY} version="weekly text-xs">
-              <Map
-                defaultCenter={{ lat: 24.8607, lng: 67.0011 }}
-                defaultZoom={13}
-                mapId="DISPATCH_MAP_ID"
-                internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-                style={{ width: '100%', height: '100%' }}
-              >
-                {nearbyRiders.map(rider => (
-                  <AdvancedMarker key={rider.id} position={{ lat: rider.lat, lng: rider.lng }} title={rider.name}>
-                    <Pin 
-                      background={rider.service === 'ambulance' ? '#f43f5e' : '#10b981'} 
-                      glyphColor="#fff" 
-                    />
-                  </AdvancedMarker>
-                ))}
-              </Map>
-            </APIProvider>
-          ) : (
-            <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center p-6 relative">
-              <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
-              <div className="relative text-center max-w-sm z-10 space-y-3">
-                <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-1 border border-slate-700">
-                  <Settings className="w-6 h-6 text-[#F4B400] animate-spin" />
-                </div>
-                
-                {mapAuthError ? (
-                  <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg text-left text-[11px] leading-normal text-amber-400">
-                    <span className="font-bold text-white block mb-0.5">Google Maps Referer API Error Detected</span>
-                    The loaded key returned <code>RefererNotAllowedMapError</code>. Please ensure HTTP referrer restrictions for your API credentials allow requests from this app's hostname. Falling back to the localized grid format.
-                  </div>
-                ) : (
-                  <>
-                    <h4 className="text-sm font-bold text-white mb-1">Visual Pakistan operational grid</h4>
-                    <p className="text-xs text-slate-400">
-                      Configure your maps credentials in settings secret <code>VITE_MAPS_API_KEY</code> to enable overlay.
-                    </p>
-                  </>
-                )}
-
-                <div className="pt-2 flex flex-wrap gap-2 justify-center">
-                  {nearbyRiders.map(r => (
-                    <span key={r.id} className="bg-slate-900 border border-slate-800 text-slate-300 rounded px-2 py-1 text-[10px] font-mono">
-                      {r.name} ({r.service})
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="bg-brand-navy-800 rounded-xl border border-slate-800 overflow-hidden relative z-0" style={{ height: '360px' }}>
+          <MapContainer center={[24.8607, 67.0011]} zoom={13} style={{ height: '100%', width: '100%', zIndex: 0 }}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {nearbyRiders.map((rider) => (
+              <Marker key={rider.id} position={[rider.lat, rider.lng]}>
+                <Popup>
+                  <div className="font-semibold text-slate-900">{rider.name}</div>
+                  <div className="text-xs text-slate-500 uppercase">{rider.service}</div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
         </div>
       </div>
     </div>
   );
 };
+

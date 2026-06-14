@@ -30,7 +30,17 @@ export const RestaurantsList: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/restaurants');
       if (data && data.length > 0) {
-        setRestaurants(data);
+        const mappedData = data.map((item: any) => ({
+          id: item.id || '-',
+          name: item.name || item.restaurant_name || item.brand || '-',
+          address: item.address || item.location || '-',
+          status: item.status || (item.is_active ? 'active' : 'inactive'),
+          hours: item.hours || item.working_hours || item.operating_hours || '09:00 - 23:00',
+          earnings: Number(item.earnings || item.total_earnings || 0),
+          preparationTime: item.preparationTime || item.preparation_time || item.prep_time || '15 mins',
+          categories: item.categories || []
+        }));
+        setRestaurants(mappedData);
       } else {
         setRestaurants([]);
         setErrorStatus('No data available.');
@@ -49,7 +59,7 @@ export const RestaurantsList: React.FC = () => {
 
   const loadMenu = async (restId: string) => {
     try {
-      const data = await api.get(`/api/restaurants/${restId}/menu`);
+      const data = await api.get(`/api/admin/restaurants/${restId}/menu`);
       setMenuItems(data || []);
     } catch {
       setMenuItems([]);
@@ -83,8 +93,16 @@ export const RestaurantsList: React.FC = () => {
     }
   };
 
-  const handleToggleItemAvailability = (itemId: string) => {
-    setMenuItems(prev => prev.map(m => m.id === itemId ? { ...m, isAvailable: !m.isAvailable } : m));
+  const handleToggleItemAvailability = async (itemId: string) => {
+    const item = menuItems.find(m => m.id === itemId);
+    if (!item) return;
+    try {
+      await api.patch(`/api/admin/restaurants/menu/${itemId}`, { isAvailable: !item.isAvailable });
+      setMenuItems(prev => prev.map(m => m.id === itemId ? { ...m, isAvailable: !m.isAvailable } : m));
+    } catch {
+      setErrorStatus('Failed to update menu item.');
+      setTimeout(() => setErrorStatus(null), 3000);
+    }
   };
 
   const filtered = restaurants.filter(r => {
@@ -260,3 +278,4 @@ export const RestaurantsList: React.FC = () => {
     </div>
   );
 };
+

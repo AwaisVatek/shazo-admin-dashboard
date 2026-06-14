@@ -562,7 +562,7 @@ export default function App() {
           <div className="flex items-center space-x-4">
             <div className="bg-[#020B18] border border-[#ffffff0c] rounded-lg py-1 px-3 text-xs text-slate-300 font-bold uppercase tracking-wide flex items-center">
               <span className="h-1.5 w-1.5 rounded-full bg-[#F4B400] mr-2 animate-pulse" />
-              Karachi Operations
+              PAKISTAN OPERATIONS
             </div>
           </div>
         </header>
@@ -595,3 +595,4 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
