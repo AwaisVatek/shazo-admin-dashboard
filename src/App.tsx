@@ -22,6 +22,7 @@ import { NotificationCenter } from './components/NotificationCenter';
 import { SystemHealth } from './components/SystemHealth';
 import { AdminUsers } from './components/AdminUsers';
 import { AppSettings } from './components/AppSettings';
+import { WhatsAppDiagnostics } from './components/WhatsAppDiagnostics';
 
 import { 
   Users, Bike, Flame, Car, Shield, ShieldAlert, Percent, Gift, 
@@ -158,6 +159,7 @@ export default function App() {
     const opsTabs = ['overview', 'dispatch', 'customers', 'riders', 'restaurants', 'rides', 'ambulance', 'food_orders', 'support', 'safety', 'health'];
     const financeTabs = ['overview', 'finance', 'manual_payments', 'commissions'];
     const supportTabs = ['overview', 'customers', 'support', 'safety'];
+    const configTabs = ['fares', 'promo_campaigns', 'zones', 'app_settings', 'whatsapp_diagnostics'];
 
     if (userRole === 'operations_manager') return opsTabs.includes(tabId);
     if (userRole === 'finance_admin') return financeTabs.includes(tabId);
@@ -462,6 +464,18 @@ export default function App() {
                   {sidebarOpen && <span>App Maintenance Window</span>}
                 </button>
               )}
+
+              {hasAccess('whatsapp_diagnostics') && (
+                <button
+                  onClick={() => setActiveTab('whatsapp_diagnostics')}
+                  className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
+                    activeTab === 'whatsapp_diagnostics' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                  }`}
+                >
+                  <Activity className="w-4 h-4 mr-3 shrink-0" />
+                  {sidebarOpen && <span>WhatsApp/OTP Diagnostics</span>}
+                </button>
+              )}
             </div>
 
             {/* Nav Group: Platform support center & tickets */}
@@ -587,6 +601,7 @@ export default function App() {
           {activeTab === 'safety' && hasAccess('safety') && <SafetyReports />}
           {activeTab === 'notification_center' && hasAccess('notification_center') && <NotificationCenter />}
           {activeTab === 'health' && hasAccess('health') && <SystemHealth />}
+          {activeTab === 'whatsapp_diagnostics' && hasAccess('whatsapp_diagnostics') && <WhatsAppDiagnostics />}
           {activeTab === 'admin_users' && hasAccess('admin_users') && <AdminUsers />}
           {activeTab === 'app_settings' && hasAccess('app_settings') && <AppSettings />}
         </main>
@@ -595,4 +610,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-
