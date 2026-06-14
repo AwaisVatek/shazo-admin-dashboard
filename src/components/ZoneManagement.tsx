@@ -29,7 +29,6 @@ export const ZoneManagement: React.FC = () => {
         setZones(data);
       } else {
         setZones([]);
-        setErrorStatus('No data available.');
       }
     } catch (err: any) {
       setZones([]);

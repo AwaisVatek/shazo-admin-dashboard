@@ -37,7 +37,7 @@ export const FoodOrders: React.FC = () => {
           restaurantName: item.restaurant_name || item.restaurant?.name || item.restaurant || '-',
           customerName: item.customer_name || item.customer?.full_name || item.customer || item.full_name || '-',
           riderName: item.rider_name || item.driver_name || item.rider?.full_name || item.rider || '-',
-          itemsSummary: item.items_summary || item.items || '-',
+          itemsSummary: item.items_summary || (Array.isArray(item.items) ? `${item.items.length} items` : (typeof item.items === 'string' ? item.items : '-')),
           status: item.status || 'received',
           subtotal: Number(item.subtotal || item.total_amount || 0),
           deliveryFee: Number(item.delivery_fee || item.fee || 0),
@@ -48,7 +48,6 @@ export const FoodOrders: React.FC = () => {
         setOrders(mappedData);
       } else {
         setOrders([]);
-        setErrorStatus('No data available.');
       }
     } catch (err: any) {
       setOrders([]);
