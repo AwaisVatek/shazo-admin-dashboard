@@ -22,7 +22,14 @@ export const RestaurantsList: React.FC = () => {
   const [filter, setFilter] = useState<string>('all');
   const [selectedRest, setSelectedRest] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
+
+  // Modal states
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [showDishModal, setShowDishModal] = useState(false);
+  const [catForm, setCatForm] = useState({ name: '', description: '', sortOrder: 0 });
+  const [dishForm, setDishForm] = useState({ categoryId: '', name: '', description: '', price: '', imageUrl: '', isAvailable: true });
 
   const loadHosts = async () => {
     try {
@@ -59,10 +66,15 @@ export const RestaurantsList: React.FC = () => {
 
   const loadMenu = async (restId: string) => {
     try {
-      const data = await api.get(`/api/admin/restaurants/${restId}/menu`);
-      setMenuItems(data || []);
+      const [menuData, catData] = await Promise.all([
+        api.get(`/api/admin/restaurants/${restId}/menu`),
+        api.get(`/api/admin/restaurants/${restId}/menu/categories`)
+      ]);
+      setMenuItems(menuData || []);
+      setCategories(catData || []);
     } catch {
       setMenuItems([]);
+      setCategories([]);
     }
   };
 
@@ -101,6 +113,34 @@ export const RestaurantsList: React.FC = () => {
       setMenuItems(prev => prev.map(m => m.id === itemId ? { ...m, isAvailable: !m.isAvailable } : m));
     } catch {
       setErrorStatus('Failed to update menu item.');
+      setTimeout(() => setErrorStatus(null), 3000);
+    }
+  };
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRest) return;
+    try {
+      await api.post(`/api/admin/restaurants/${selectedRest.id}/menu/category`, catForm);
+      setShowCatModal(false);
+      setCatForm({ name: '', description: '', sortOrder: 0 });
+      loadMenu(selectedRest.id);
+    } catch (err: any) {
+      setErrorStatus(err.message || 'Failed to add category');
+      setTimeout(() => setErrorStatus(null), 3000);
+    }
+  };
+
+  const handleAddDish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRest) return;
+    try {
+      await api.post(`/api/admin/restaurants/${selectedRest.id}/menu/dish`, dishForm);
+      setShowDishModal(false);
+      setDishForm({ categoryId: '', name: '', description: '', price: '', imageUrl: '', isAvailable: true });
+      loadMenu(selectedRest.id);
+    } catch (err: any) {
+      setErrorStatus(err.message || 'Failed to add dish');
       setTimeout(() => setErrorStatus(null), 3000);
     }
   };
@@ -226,9 +266,14 @@ export const RestaurantsList: React.FC = () => {
               <div className="border-t border-slate-800/60 pt-4 space-y-3.5">
                 <div className="flex justify-between items-center mb-1">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Menu Catalog ({menuItems.length})</h4>
-                  <button className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[10px] font-bold py-1 px-2.5 rounded flex items-center">
-                    <Plus className="w-3 h-3 mr-1" /> Add dish
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowCatModal(true)} className="bg-slate-800 text-slate-300 hover:text-white text-[10px] font-bold py-1 px-2.5 rounded flex items-center">
+                      <Plus className="w-3 h-3 mr-1" /> Add Category
+                    </button>
+                    <button onClick={() => setShowDishModal(true)} className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-[10px] font-bold py-1 px-2.5 rounded flex items-center">
+                      <Plus className="w-3 h-3 mr-1" /> Add Dish
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-2 max-h-[290px] overflow-y-auto pr-1">
@@ -275,6 +320,76 @@ export const RestaurantsList: React.FC = () => {
           )}
         </div>
       </div>
+      {/* Modals */}
+      {showCatModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-brand-navy-900 border border-slate-800 rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold text-white mb-4">Add Menu Category</h2>
+            <form onSubmit={handleAddCategory} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Category Name</label>
+                <input required type="text" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white focus:border-emerald-500 focus:outline-none" placeholder="e.g. Appetizers" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Description (Optional)</label>
+                <input type="text" value={catForm.description} onChange={e => setCatForm({...catForm, description: e.target.value})} className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white focus:border-emerald-500 focus:outline-none" />
+              </div>
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-800/60">
+                <button type="button" onClick={() => setShowCatModal(false)} className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white">Cancel</button>
+                <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-brand-navy-950 px-4 py-2 rounded text-sm font-bold">Save Category</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDishModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-brand-navy-900 border border-slate-800 rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold text-white mb-4">Add Dish</h2>
+            {categories.length === 0 ? (
+              <div className="text-rose-400 text-sm mb-4">You must create a category first before adding dishes.</div>
+            ) : (
+              <form onSubmit={handleAddDish} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Category</label>
+                  <select required value={dishForm.categoryId} onChange={e => setDishForm({...dishForm, categoryId: e.target.value})} className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white focus:border-emerald-500 focus:outline-none">
+                    <option value="">Select Category...</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Dish Name</label>
+                  <input required type="text" value={dishForm.name} onChange={e => setDishForm({...dishForm, name: e.target.value})} className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white focus:border-emerald-500 focus:outline-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 mb-1">Price (PKR)</label>
+                    <input required type="number" value={dishForm.price} onChange={e => setDishForm({...dishForm, price: e.target.value})} className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white focus:border-emerald-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 mb-1">Image URL (Optional)</label>
+                    <input type="text" value={dishForm.imageUrl} onChange={e => setDishForm({...dishForm, imageUrl: e.target.value})} className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white focus:border-emerald-500 focus:outline-none" placeholder="https://..." />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Description (Optional)</label>
+                  <textarea rows={2} value={dishForm.description} onChange={e => setDishForm({...dishForm, description: e.target.value})} className="w-full bg-slate-905 border border-slate-800 py-2 px-3 rounded text-white focus:border-emerald-500 focus:outline-none" />
+                </div>
+                <div className="flex gap-3 justify-end pt-4 border-t border-slate-800/60">
+                  <button type="button" onClick={() => setShowDishModal(false)} className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white">Cancel</button>
+                  <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-brand-navy-950 px-4 py-2 rounded text-sm font-bold">Save Dish</button>
+                </div>
+              </form>
+            )}
+            {categories.length === 0 && (
+              <div className="flex justify-end pt-4 border-t border-slate-800/60">
+                <button type="button" onClick={() => setShowDishModal(false)} className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white">Close</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
