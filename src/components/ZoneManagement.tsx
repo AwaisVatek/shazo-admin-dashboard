@@ -89,7 +89,7 @@ export const ZoneManagement: React.FC = () => {
           <h1 className="text-xl font-black text-white tracking-tight flex items-center">
             <Layers className="w-6 h-6 mr-2 text-[#F4B400]" /> Operational Zones & Coverage Settings
           </h1>
-          <p className="text-slate-400 text-xs mt-1">Geofence boundary controllers, toggle active sectors, and induce surge pricing overrides across Karachi.</p>
+          <p className="text-slate-400 text-xs mt-1">Geofence boundary controllers, toggle active sectors, and induce surge pricing overrides across Pakistan.</p>
         </div>
       </div>
 

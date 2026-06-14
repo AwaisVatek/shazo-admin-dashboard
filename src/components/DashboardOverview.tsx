@@ -57,7 +57,7 @@ export const DashboardOverview: React.FC = () => {
         <div className="flex justify-between items-center border-b border-slate-800 pb-5">
           <div>
             <h1 className="text-2xl font-black text-white tracking-tight">System Operations Hub</h1>
-            <p className="text-[#AAB6C5] text-xs mt-1">Real-time control tower for the Shazo Karachi-first mobility platforms.</p>
+            <p className="text-[#AAB6C5] text-xs mt-1">Real-time control tower for the Shazo Pakistan-wide mobility platform.</p>
           </div>
         </div>
         <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-8 rounded-xl text-center text-xs font-semibold max-w-xl mx-auto space-y-4 shadow-2xl">
@@ -77,7 +77,7 @@ export const DashboardOverview: React.FC = () => {
         <div className="flex justify-between items-center border-b border-slate-800 pb-5">
           <div>
             <h1 className="text-2xl font-black text-white tracking-tight">System Operations Hub</h1>
-            <p className="text-[#AAB6C5] text-xs mt-1">Real-time control tower for the Shazo Karachi-first mobility platforms.</p>
+            <p className="text-[#AAB6C5] text-xs mt-1">Real-time control tower for the Shazo Pakistan-wide mobility platform.</p>
           </div>
         </div>
         <div className="bg-[#061B35] border border-[#ffffff0c] text-slate-400 p-12 rounded-xl text-center text-xs font-semibold max-w-xl mx-auto space-y-3.5 shadow-2xl">
@@ -98,7 +98,7 @@ export const DashboardOverview: React.FC = () => {
       <div className="flex justify-between items-center border-b border-slate-800 pb-5">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight">System Operations Hub</h1>
-          <p className="text-slate-400 text-sm mt-1">Real-time control tower for the Shazo Karachi-first mobility platforms.</p>
+          <p className="text-slate-400 text-sm mt-1">Real-time control tower for the Shazo Pakistan-wide mobility platform.</p>
         </div>
         <div className="flex items-center space-x-2 bg-slate-900 border border-slate-800 py-1.5 px-3 rounded-lg text-xs font-mono text-emerald-400">
           <Activity className="w-4 h-4 animate-spin text-emerald-500" />

@@ -113,7 +113,7 @@ export const LiveDispatch: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
       <div className="lg:col-span-12 flex justify-between items-center border-b border-slate-800 pb-5">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Karachi Dispatch Control</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">Pakistan Dispatch Control</h1>
           <p className="text-slate-400 text-sm mt-1">Live dispatch assignments, unassigned bookings logs, and central vehicle navigation trackers.</p>
         </div>
         <button onClick={loadData} className="p-2 border border-slate-800 text-slate-300 rounded-lg bg-slate-900 hover:bg-slate-800 transition">
@@ -284,7 +284,7 @@ export const LiveDispatch: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <h4 className="text-sm font-bold text-white mb-1">Visual Karachi schematic operational grid</h4>
+                    <h4 className="text-sm font-bold text-white mb-1">Visual Pakistan operational grid</h4>
                     <p className="text-xs text-slate-400">
                       Configure your maps credentials in settings secret <code>VITE_MAPS_API_KEY</code> to enable overlay.
                     </p>
