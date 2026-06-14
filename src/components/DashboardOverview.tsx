@@ -89,6 +89,10 @@ export const DashboardOverview: React.FC = () => {
     );
   }
 
+  const totals = data?.totals || data || {};
+  const n = (value: any) => Number(value || 0).toLocaleString();
+  const money = (value: any) => `${Number(value || 0).toLocaleString()} PKR`;
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center border-b border-slate-800 pb-5">
@@ -120,28 +124,28 @@ export const DashboardOverview: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard 
               title="Total Customers" 
-              value={data?.total_customers || "14,820"} 
+              value={n(totals.customers)} 
               icon={Users} 
               color="bg-indigo-500/10 text-indigo-400" 
               subtext="+12% from last week"
             />
             <MetricCard 
               title="Active Riders" 
-              value={`${data?.active_riders || "842"} / ${data?.total_riders || "2,410"}`} 
+              value={`${n(totals.active_riders)} / ${n(totals.riders)}`} 
               icon={Bike} 
               color="bg-emerald-500/10 text-emerald-400" 
-              subtext="88% current utilization"
+              subtext={`${Number(totals.riders || 0) > 0 ? Math.round((Number(totals.active_riders || 0) / Number(totals.riders || 1)) * 100) : 0}% current utilization`}
             />
             <MetricCard 
               title="Active Restuarants" 
-              value={data?.active_restaurants || "184"} 
+              value={n(totals.active_restaurants || totals.restaurants)} 
               icon={Flame} 
               color="bg-amber-500/10 text-amber-400" 
-              subtext="12 pending onboarding"
+              subtext={`${n(totals.pending_restaurant_verifications)} pending onboarding`}
             />
             <MetricCard 
               title="Revenue Today" 
-              value={`${data?.today_revenue ? data.today_revenue.toLocaleString() : "148,250"} PKR`} 
+              value={money(totals.today_revenue)} 
               icon={DollarSign} 
               color="bg-green-500/10 text-green-400" 
               subtext="Cash/Wallet collective sum"
@@ -155,19 +159,19 @@ export const DashboardOverview: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><Bike className="w-4 h-4 mr-2 text-indigo-400" /> Bike Trips</span>
-                  <span className="text-white font-bold text-sm">{data?.today_bike_rides || "342"}</span>
+                  <span className="text-white font-bold text-sm">{n(totals.today_bike_rides)}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><Car className="w-4 h-4 mr-2 text-emerald-400" /> Car Trips</span>
-                  <span className="text-white font-bold text-sm">{data?.today_car_rides || "98"}</span>
+                  <span className="text-white font-bold text-sm">{n(totals.today_car_rides)}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><Shield className="w-4 h-4 mr-2 text-rose-400" strokeWidth={2.5} /> Ambulance Bookings</span>
-                  <span className="text-white font-bold text-sm">{data?.today_ambulance_bookings || "14"}</span>
+                  <span className="text-white font-bold text-sm">{n(totals.today_ambulance_bookings)}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><Flame className="w-4 h-4 mr-2 text-amber-400" /> Food Orders</span>
-                  <span className="text-white font-bold text-sm">{data?.today_food_orders || "412"}</span>
+                  <span className="text-white font-bold text-sm">{n(totals.today_food_orders)}</span>
                 </div>
               </div>
             </div>
@@ -178,19 +182,19 @@ export const DashboardOverview: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><DollarSign className="w-4 h-4 mr-2 text-emerald-400" /> Total Cash Collected</span>
-                  <span className="text-white font-bold text-sm">{data?.cash_collected || "92,100"} PKR</span>
+                  <span className="text-white font-bold text-sm">{n(totals.cash_collected_today)} PKR</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><Wallet className="w-4 h-4 mr-2 text-indigo-400" /> Pending Wallet Top-ups</span>
-                  <span className="text-white font-bold text-sm text-yellow-500">{data?.pending_wallet_topups || "18"} requests</span>
+                  <span className="text-white font-bold text-sm text-yellow-500">{n(totals.pending_wallet_topups)} requests</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><Percent className="w-4 h-4 mr-2 text-indigo-400" /> Commission Today</span>
-                  <span className="text-white font-bold text-sm">{data?.commission_earned || "29,650"} PKR</span>
+                  <span className="text-white font-bold text-sm">{n(totals.commission_today)} PKR</span>
                 </div>
                 <div className="flex items-center justify-between pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-emerald-400" /> Free Campaign Quota</span>
-                  <span className="text-white font-mono text-sm">{data?.free_ride_quota || "48 / 100"} used</span>
+                  <span className="text-white font-mono text-sm">{`${n(totals.free_quota_used)} / ${n(totals.free_quota_total)} used`}</span>
                 </div>
               </div>
             </div>
@@ -201,19 +205,19 @@ export const DashboardOverview: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><HelpCircle className="w-4 h-4 mr-2 text-cyan-400" /> Open Support Tickets</span>
-                  <span className="text-white font-bold text-sm text-yellow-500">{data?.pending_support_tickets || "12"} Open</span>
+                  <span className="text-white font-bold text-sm text-yellow-500">{n(totals.support_tickets_open)} Open</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><XCircle className="w-4 h-4 mr-2 text-rose-400" /> Cancellation Index</span>
-                  <span className="text-white font-bold text-sm text-rose-500">{data?.cancelled_rides_ratio || "2.4%"} of orders</span>
+                  <span className="text-white font-bold text-sm text-rose-500">0% of orders</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-slate-800/55 pb-2">
                   <span className="text-slate-400 text-sm flex items-center"><CheckCircle className="w-4 h-4 mr-2 text-emerald-400" /> SLA Target Rating</span>
-                  <span className="text-white font-bold text-sm">96.8%</span>
+                  <span className="text-white font-bold text-sm">0%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 text-sm flex items-center"><Users className="w-4 h-4 mr-2 text-slate-400" /> Active Agents</span>
-                  <span className="text-white font-bold text-sm">4 Online</span>
+                  <span className="text-white font-bold text-sm">0 Online</span>
                 </div>
               </div>
             </div>
