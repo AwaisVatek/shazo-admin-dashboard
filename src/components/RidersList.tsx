@@ -23,7 +23,21 @@ export const RidersList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+  const [selectedDetails, setSelectedDetails] = useState<any>(null);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string>('');
+
+  const handleSelectRider = async (rider: Rider) => {
+    setSelectedRider(rider);
+    setSelectedDetails(null);
+    setRejectionReason('');
+    try {
+      const details = await api.get(`/api/admin/riders/${rider.id}/details`);
+      setSelectedDetails(details);
+    } catch (err) {
+      console.error("Failed to load rider details");
+    }
+  };
 
   const loadRiders = async () => {
     try {
@@ -52,10 +66,11 @@ export const RidersList: React.FC = () => {
     loadRiders();
   }, []);
 
-  const handleUpdateStatus = async (riderId: string, status: 'verified' | 'rejected' | 'suspended') => {
+  const handleUpdateStatus = async (riderId: string, status: 'verified' | 'rejected' | 'suspended', reason?: string) => {
     try {
-      await api.patch(`/api/admin/riders/${riderId}`, { status });
+      await api.patch(`/api/admin/riders/${riderId}`, { status, reason });
       loadRiders();
+      handleSelectRider(selectedRider!); // Reload details
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
         setErrorStatus('Backend endpoint not implemented yet.');
@@ -63,6 +78,24 @@ export const RidersList: React.FC = () => {
         setErrorStatus('Unable to save changes to backend.');
       }
       setTimeout(() => setErrorStatus(null), 3000);
+    }
+  };
+
+  const handleUpdateDocument = async (riderId: string, docId: string, status: 'verified' | 'rejected', reason?: string) => {
+    try {
+      await api.put(`/api/admin/riders/${riderId}/documents/${docId}`, { status, rejection_reason: reason });
+      handleSelectRider(selectedRider!);
+    } catch (err) {
+      console.error("Failed to update document");
+    }
+  };
+
+  const handleUpdateVehicle = async (riderId: string, status: 'verified' | 'rejected', reason?: string) => {
+    try {
+      await api.put(`/api/admin/riders/${riderId}/vehicle`, { status, rejection_reason: reason });
+      handleSelectRider(selectedRider!);
+    } catch (err) {
+      console.error("Failed to update vehicle");
     }
   };
 
@@ -172,7 +205,7 @@ export const RidersList: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button 
-                      onClick={() => setSelectedRider(rider)} 
+                      onClick={() => handleSelectRider(rider)} 
                       className="text-slate-405 hover:text-white hover:bg-slate-800 p-1.5 rounded"
                     >
                       <Eye className="w-4 h-4" />
@@ -228,21 +261,88 @@ export const RidersList: React.FC = () => {
               </div>
 
               <div className="space-y-3.5 border-t border-[#ffffff0c] pt-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Credentials Audit Check list</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Credentials & Documents</h4>
                 
                 <div className="space-y-2.5 text-xs">
-                  <div className="flex justify-between items-center p-2.5 bg-[#020B18] rounded border border-[#ffffff0c]">
-                    <span className="text-slate-400 flex items-center mb-0"><FileText className="w-3.5 h-3.5 mr-1.5 text-[#F4B400]" /> CNIC Copy</span>
-                    <span className="text-emerald-400 font-bold flex items-center"><Check className="w-3 h-3 mr-0.5" /> VERIFIED</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2.5 bg-[#020B18] rounded border border-[#ffffff0c]">
-                    <span className="text-slate-400 flex items-center mb-0"><FileText className="w-3.5 h-3.5 mr-1.5 text-[#F4B400]" /> Driving License</span>
-                    <span className="text-emerald-400 font-bold flex items-center"><Check className="w-3 h-3 mr-0.5" /> VERIFIED</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2.5 bg-[#020B18] rounded border border-[#ffffff0c]">
-                    <span className="text-slate-400 flex items-center mb-0"><FileText className="w-3.5 h-3.5 mr-1.5 text-slate-500" /> Police Clearance</span>
-                    <span className="text-[#F4B400] font-bold flex items-center">PENDING FILE</span>
-                  </div>
+                  {!selectedDetails ? (
+                    <div className="text-slate-500 italic">Loading documents...</div>
+                  ) : selectedDetails.documents?.length > 0 ? (
+                    selectedDetails.documents.map((doc: any) => (
+                      <div key={doc.id} className="flex flex-col p-2.5 bg-[#020B18] rounded border border-[#ffffff0c]">
+                        <div className="flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="text-slate-400 flex items-center mb-0">
+                              <FileText className="w-3.5 h-3.5 mr-1.5 text-[#F4B400]" /> 
+                              {doc.document_type.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <a href={doc.file_url} target="_blank" className="text-[10px] text-blue-400 hover:underline ml-5 mt-1">View File</a>
+                          </div>
+                          <span className={`font-bold flex items-center ${doc.status === 'verified' ? 'text-emerald-400' : doc.status === 'rejected' ? 'text-rose-400' : 'text-yellow-400'}`}>
+                            {doc.status.toUpperCase()}
+                          </span>
+                        </div>
+                        {doc.status !== 'verified' && (
+                          <div className="mt-2 flex gap-2">
+                            <button onClick={() => handleUpdateDocument(selectedRider.id, doc.id, 'verified')} className="text-emerald-400 hover:underline text-[10px]">Approve</button>
+                            <button onClick={() => handleUpdateDocument(selectedRider.id, doc.id, 'rejected', rejectionReason)} className="text-rose-400 hover:underline text-[10px]">Reject</button>
+                          </div>
+                        )}
+                        {doc.status === 'rejected' && doc.rejection_reason && (
+                          <div className="text-[10px] text-rose-500 mt-1 ml-5">Reason: {doc.rejection_reason}</div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-slate-500 italic">No documents uploaded.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3.5 border-t border-[#ffffff0c] pt-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Vehicle Details</h4>
+                <div className="space-y-2.5 text-xs">
+                  {!selectedDetails ? (
+                    <div className="text-slate-500 italic">Loading vehicle...</div>
+                  ) : selectedDetails.vehicle ? (
+                    <div className="p-3 bg-[#020B18] rounded-lg border border-[#ffffff0c]">
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div>
+                          <span className="text-slate-500 block text-[10px] uppercase">Category</span>
+                          <span className="text-slate-300 font-medium">{selectedDetails.vehicle.vehicle_category}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px] uppercase">Make/Model</span>
+                          <span className="text-slate-300 font-medium">{selectedDetails.vehicle.make_model} ({selectedDetails.vehicle.year})</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px] uppercase">Plate</span>
+                          <span className="text-slate-300 font-medium">{selectedDetails.vehicle.license_plate}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 block text-[10px] uppercase">Status</span>
+                          <span className={`font-bold ${selectedDetails.vehicle.verification_status === 'verified' ? 'text-emerald-400' : selectedDetails.vehicle.verification_status === 'rejected' ? 'text-rose-400' : 'text-yellow-400'}`}>
+                            {selectedDetails.vehicle.verification_status.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedDetails.vehicle.registration_document_url && (
+                        <div className="mb-2">
+                          <a href={selectedDetails.vehicle.registration_document_url} target="_blank" className="text-[10px] text-blue-400 hover:underline">View Registration Doc</a>
+                        </div>
+                      )}
+                      {selectedDetails.vehicle.verification_status !== 'verified' && (
+                        <div className="mt-2 flex gap-2">
+                          <button onClick={() => handleUpdateVehicle(selectedRider.id, 'verified')} className="text-emerald-400 hover:underline text-[10px]">Approve</button>
+                          <button onClick={() => handleUpdateVehicle(selectedRider.id, 'rejected', rejectionReason)} className="text-rose-400 hover:underline text-[10px]">Reject</button>
+                        </div>
+                      )}
+                      {selectedDetails.vehicle.verification_status === 'rejected' && selectedDetails.vehicle.rejection_reason && (
+                        <div className="text-[10px] text-rose-500 mt-1">Reason: {selectedDetails.vehicle.rejection_reason}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-slate-500 italic">No vehicle submitted.</div>
+                  )}
                 </div>
               </div>
 
@@ -259,25 +359,34 @@ export const RidersList: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 {selectedRider.status === 'pending' ? (
                   <>
-                    <button 
-                      onClick={() => handleUpdateStatus(selectedRider.id, 'verified')}
-                      className="flex-1 bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-black text-xs py-2.5 rounded-lg transition cursor-pointer font-bold uppercase"
-                    >
-                      Approve Driver
-                    </button>
-                    <button 
-                      onClick={() => handleUpdateStatus(selectedRider.id, 'rejected')}
-                      className="flex-1 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs py-2.5 rounded-lg transition cursor-pointer font-bold uppercase"
-                    >
-                      Reject Documents
-                    </button>
+                    <input
+                      type="text"
+                      placeholder="Reason for Rejection (Optional)"
+                      className="w-full bg-[#020B18] border border-[#ffffff0c] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#F4B400]"
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleUpdateStatus(selectedRider.id, 'verified')}
+                        className="flex-1 bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-black text-xs py-2.5 rounded-lg transition cursor-pointer font-bold uppercase"
+                      >
+                        Approve Driver
+                      </button>
+                      <button 
+                        onClick={() => handleUpdateStatus(selectedRider.id, 'rejected', rejectionReason)}
+                        className="flex-1 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs py-2.5 rounded-lg transition cursor-pointer font-bold uppercase"
+                      >
+                        Reject Profile
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <button
-                    onClick={() => handleUpdateStatus(selectedRider.id, selectedRider.status === 'suspended' ? 'verified' : 'suspended')}
+                    onClick={() => handleUpdateStatus(selectedRider.id, selectedRider.status === 'suspended' ? 'verified' : 'suspended', rejectionReason)}
                     className={`w-full font-bold py-2.5 text-xs rounded-lg transition cursor-pointer uppercase ${
                       selectedRider.status === 'suspended'
                         ? 'bg-[#F4B400] text-[#020B18] hover:bg-[#FFD766]'
