@@ -5,14 +5,33 @@ import {
   HelpCircle, AlertCircle, RefreshCw, Layers 
 } from 'lucide-react';
 
+// service_type values match what's actually configured in the real
+// service_settings table (one row per broad category) — not per-vehicle
+// sub-types like car_mini/car_ac/rickshaw, which live on ride_bookings.vehicle_category instead.
 interface ServiceFare {
-  serviceType: 'bike' | 'car' | 'ambulance' | 'food';
+  serviceType: 'bike' | 'car' | 'ambulance' | 'food_delivery' | 'restaurant' | string;
   baseFare: number;
   perKmRate: number;
   perMinRate: number;
   minimumFare: number;
   peakHourMultiplier: number;
   cancelFee: number;
+}
+
+// GET /api/admin/settings/fares returns snake_case (base_fare, per_km_rate,
+// per_minute_rate, minimum_fare, cancel_fee, peak_hour_multiplier) — this
+// component's state/handlers/POST all use camelCase. Without this transform,
+// every field loads blank and saving would zero out real fare configuration.
+function toCamelFare(row: any): ServiceFare {
+  return {
+    serviceType: row.service_type,
+    baseFare: Number(row.base_fare || 0),
+    perKmRate: Number(row.per_km_rate || 0),
+    perMinRate: Number(row.per_minute_rate || 0),
+    minimumFare: Number(row.minimum_fare || 0),
+    peakHourMultiplier: Number(row.peak_hour_multiplier || 1),
+    cancelFee: Number(row.cancel_fee || 0),
+  };
 }
 
 export const SettingsFares: React.FC = () => {
@@ -27,7 +46,7 @@ export const SettingsFares: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/settings/fares');
       if (data && data.length > 0) {
-        setFares(data);
+        setFares(data.map(toCamelFare));
       } else {
         setFares([]);
         setErrorStatus('No data available.');
@@ -110,15 +129,23 @@ export const SettingsFares: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {fares.map((fare, idx) => {
               const isAmbulance = fare.serviceType === 'ambulance';
+
+              let title = '';
+              let Icon = Car;
+              let iconColor = 'text-emerald-400';
+
+              if (fare.serviceType === 'bike') { title = 'Bike Fare Settings'; Icon = Bike; iconColor = 'text-indigo-400'; }
+              if (fare.serviceType === 'car') { title = 'Car Fare Settings'; Icon = Car; iconColor = 'text-emerald-400'; }
+              if (fare.serviceType === 'ambulance') { title = 'Ambulance Fare Settings'; Icon = Shield; iconColor = 'text-rose-400'; }
+              if (fare.serviceType === 'food_delivery') { title = 'Food Delivery Fare Settings'; Icon = Flame; iconColor = 'text-amber-500'; }
+              if (fare.serviceType === 'restaurant') { title = 'Restaurant Commission Settings'; Icon = Flame; iconColor = 'text-amber-500'; }
+
               return (
                 <div key={fare.serviceType} className="bg-brand-navy-800 rounded-xl border border-slate-850 p-5 space-y-4">
                   <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                     <div className="flex items-center space-x-2">
-                      {fare.serviceType === 'bike' && <Bike className="w-5 h-5 text-indigo-400" />}
-                      {fare.serviceType === 'car' && <Car className="w-5 h-5 text-emerald-400" />}
-                      {fare.serviceType === 'ambulance' && <Shield className="w-5 h-5 text-rose-500" />}
-                      {fare.serviceType === 'food' && <Flame className="w-5 h-5 text-amber-500" />}
-                      <span className="text-white font-extrabold uppercase tracking-wide text-sm">Shazo {fare.serviceType}</span>
+                      <Icon className={`w-5 h-5 ${iconColor}`} />
+                      <span className="text-white font-extrabold uppercase tracking-wide text-sm">{title || `Shazo ${fare.serviceType}`}</span>
                     </div>
                     <span className="text-[10px] font-mono bg-slate-900 border border-slate-850 text-slate-500 px-2 py-0.5 rounded uppercase">
                       PKR CURRENCY

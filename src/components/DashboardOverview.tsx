@@ -81,7 +81,7 @@ export const DashboardOverview: React.FC = () => {
           </div>
         </div>
         <div className="bg-[#061B35] border border-[#ffffff0c] text-slate-400 p-12 rounded-xl text-center text-xs font-semibold max-w-xl mx-auto space-y-3.5 shadow-2xl">
-          <Activity className="w-10 h-10 mx-auto text-[#F4B400] opacity-40 animate-pulse" />
+          <Activity className="w-10 h-10 mx-auto text-[#FFC107] opacity-40 animate-pulse" />
           <h2 className="text-white font-extrabold text-sm uppercase tracking-wider">No data available.</h2>
           <p className="text-[#AAB6C5]">There are currently no metrics recorded in this control terminal. Start mobile activities to begin receiving live operations telemetry.</p>
         </div>
@@ -109,7 +109,7 @@ export const DashboardOverview: React.FC = () => {
       {loading ? (
         <div className="space-y-6">
           <div className="flex items-center space-x-3 text-[#AAB6C5] font-mono text-xs uppercase tracking-widest animate-pulse p-4 justify-center py-20 bg-[#061B35]/30 rounded-xl border border-slate-800/40">
-            <Activity className="w-5 h-5 animate-spin text-[#F4B400]" />
+            <Activity className="w-5 h-5 animate-spin text-[#FFC107]" />
             <span>Loading dashboard…</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 opacity-50 pointer-events-none">

@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
-import { 
-  ShieldAlert, User, Shield, Phone, MapPin, 
-  Clock, Check, Eye, AlertCircle, RefreshCcw 
+import {
+  ShieldAlert, User, Shield, Phone, MapPin,
+  Clock, Check, Eye, AlertCircle, RefreshCcw
 } from 'lucide-react';
 
+// Field names match the real ambulance_bookings columns exactly (verified against
+// the live database) — this used to be a guessed camelCase shape that never
+// matched what GET /api/admin/ambulance-bookings actually returns.
 interface AmbulanceBooking {
   id: string;
-  patientName: string;
-  contactNo: string;
-  emergencyType: string;
-  pickup: string;
-  destination: string;
-  status: 'pending' | 'dispatched' | 'reached' | 'completed' | 'cancelled';
-  driverName?: string;
-  vehiclePlate?: string;
-  estimatedFare: number;
+  patient_name: string;
+  patient_phone: string;
+  emergency_type: string;
+  pickup_address: string;
+  hospital_address: string;
+  status: 'requested' | 'dispatched' | 'arrived' | 'completed' | 'cancelled';
+  driver_name?: string;
+  assigned_vehicle_number?: string;
+  total_fare: number;
+  is_free: boolean;
 }
 
 export const AmbulanceBookings: React.FC = () => {
@@ -23,6 +27,8 @@ export const AmbulanceBookings: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedBooking, setSelectedBooking] = useState<AmbulanceBooking | null>(null);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
+  const [driverNameInput, setDriverNameInput] = useState('');
+  const [vehicleNumberInput, setVehicleNumberInput] = useState('');
 
   const loadAmbulances = async () => {
     try {
@@ -51,9 +57,22 @@ export const AmbulanceBookings: React.FC = () => {
     loadAmbulances();
   }, []);
 
-  const handleDispatch = async (id: string, driver: string, plate: string) => {
+  const handleDispatch = async (id: string, driverName: string, vehicleNumber: string) => {
+    if (!driverName.trim() || !vehicleNumber.trim()) {
+      setErrorStatus('Please enter both a driver name and a vehicle number.');
+      setTimeout(() => setErrorStatus(null), 3050);
+      return;
+    }
     try {
-      await api.patch(`/api/ambulance/${id}`, { status: 'dispatched', driverName: driver, vehiclePlate: plate });
+      // Real endpoint is PATCH /api/ambulance/:id/status (not /api/ambulance/:id),
+      // and it expects snake_case driver_name/assigned_vehicle_number.
+      await api.patch(`/api/ambulance/${id}/status`, {
+        status: 'dispatched',
+        driver_name: driverName,
+        assigned_vehicle_number: vehicleNumber,
+      });
+      setDriverNameInput('');
+      setVehicleNumberInput('');
       loadAmbulances();
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
@@ -83,7 +102,7 @@ export const AmbulanceBookings: React.FC = () => {
         <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-400" />
         <div>
           <span className="font-bold">Disclaimer Notice: </span>
-          Ambulance services are subject to availability and coverage. All medical vehicle trips are billed as paid dispatch operations; never configure free promo quotas for ambulance transportation.
+          Ambulance is currently configured as a free service (see Settings → Fares). All medical vehicle trips are subject to availability and coverage.
         </div>
       </div>
 
@@ -101,7 +120,7 @@ export const AmbulanceBookings: React.FC = () => {
                 <th className="px-6 py-4">Patient Case</th>
                 <th className="px-6 py-4">Emergency Category</th>
                 <th className="px-6 py-4">Transit Path</th>
-                <th className="px-6 py-4 text-center">Fare Estimate</th>
+                <th className="px-6 py-4 text-center">Fare</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -117,24 +136,24 @@ export const AmbulanceBookings: React.FC = () => {
                 <tr key={bo.id} className="hover:bg-slate-900/40 transition">
                   <td className="px-6 py-4">
                     <div>
-                      <span className="text-white font-bold block">{bo.patientName}</span>
-                      <span className="text-xs text-slate-500 font-mono block">{bo.id} • {bo.contactNo}</span>
+                      <span className="text-white font-bold block">{bo.patient_name}</span>
+                      <span className="text-xs text-slate-500 font-mono block">{bo.id} • {bo.patient_phone}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex px-2 py-1 bg-rose-500/10 text-rose-400 rounded text-xs font-bold font-mono">
-                      {bo.emergencyType}
+                      {bo.emergency_type}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-xs font-mono text-slate-400 max-w-xs truncate">
-                    <div className="flex items-center"><MapPin className="w-3.5 h-3.5 mr-1" /> {String(bo?.pickup || '').split(',')[0] || ''}</div>
-                    <div className="flex items-center mt-1"><Check className="w-3.5 h-3.5 mr-1 text-emerald-500" /> {String(bo?.destination || '').split(',')[0] || ''}</div>
+                    <div className="flex items-center"><MapPin className="w-3.5 h-3.5 mr-1" /> {String(bo?.pickup_address || '').split(',')[0] || ''}</div>
+                    <div className="flex items-center mt-1"><Check className="w-3.5 h-3.5 mr-1 text-emerald-500" /> {String(bo?.hospital_address || '').split(',')[0] || ''}</div>
                   </td>
                   <td className="px-6 py-4 text-center text-xs font-bold text-white font-mono">
-                    {bo.estimatedFare} PKR
+                    {bo.is_free ? 'FREE' : `${bo.total_fare} PKR`}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
+                    <button
                       onClick={() => setSelectedBooking(bo)}
                       className="text-slate-400 hover:text-white hover:bg-slate-800 p-1.5 rounded"
                     >
@@ -154,9 +173,9 @@ export const AmbulanceBookings: React.FC = () => {
             <div className="space-y-6">
               <div className="border-b border-slate-800 pb-4">
                 <span className="text-xs text-slate-500 font-mono block">{selectedBooking.id}</span>
-                <h3 className="text-lg font-bold text-white mt-1">{selectedBooking.patientName}</h3>
+                <h3 className="text-lg font-bold text-white mt-1">{selectedBooking.patient_name}</h3>
                 <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase mt-2 ${
-                  selectedBooking.status === 'pending' ? 'bg-amber-500/10 text-yellow-400 animate-pulse' : 'bg-emerald-500/10 text-emerald-400'
+                  selectedBooking.status === 'requested' ? 'bg-amber-500/10 text-yellow-400 animate-pulse' : 'bg-emerald-500/10 text-emerald-400'
                 }`}>
                   {selectedBooking.status}
                 </span>
@@ -167,31 +186,47 @@ export const AmbulanceBookings: React.FC = () => {
                 <div className="bg-slate-900 p-3.5 rounded-lg border border-slate-800 space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-slate-500">Chief Complaint</span>
-                    <span className="text-rose-400 font-semibold">{selectedBooking.emergencyType}</span>
+                    <span className="text-rose-400 font-semibold">{selectedBooking.emergency_type}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Transit Type</span>
-                    <span className="text-slate-300">Paid Dispatch Unit</span>
+                    <span className="text-slate-300">{selectedBooking.is_free ? 'Free Dispatch' : 'Paid Dispatch Unit'}</span>
                   </div>
                   <div className="flex justify-between font-bold text-white border-t border-slate-800/60 pt-2 mt-1">
-                    <span>Admin Dispatched Fare</span>
-                    <span className="font-mono text-emerald-400">{selectedBooking.estimatedFare} PKR</span>
+                    <span>Fare</span>
+                    <span className="font-mono text-emerald-400">{selectedBooking.is_free ? 'FREE' : `${selectedBooking.total_fare} PKR`}</span>
                   </div>
                 </div>
               </div>
 
-              {selectedBooking.status === 'pending' ? (
-                <button
-                  onClick={() => handleDispatch(selectedBooking.id, 'Sajid Hussain', 'AMB-1122')}
-                  className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-2.5 rounded-lg text-xs transition uppercase tracking-wider"
-                >
-                  Confirm Dispatch Unit
-                </button>
+              {selectedBooking.status === 'requested' ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Driver name"
+                    value={driverNameInput}
+                    onChange={(e) => setDriverNameInput(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Vehicle number"
+                    value={vehicleNumberInput}
+                    onChange={(e) => setVehicleNumberInput(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600"
+                  />
+                  <button
+                    onClick={() => handleDispatch(selectedBooking.id, driverNameInput, vehicleNumberInput)}
+                    className="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-2.5 rounded-lg text-xs transition uppercase tracking-wider"
+                  >
+                    Confirm Dispatch Unit
+                  </button>
+                </div>
               ) : (
                 <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg text-xs">
                   <span className="text-slate-500 uppercase tracking-widest text-[9px] block">Assigned Responder</span>
-                  <span className="text-white font-bold block mt-1">{selectedBooking.driverName}</span>
-                  <span className="text-slate-400 font-mono mt-0.5 block">{selectedBooking.vehiclePlate} (Cardiac Unit Enabled)</span>
+                  <span className="text-white font-bold block mt-1">{selectedBooking.driver_name || '—'}</span>
+                  <span className="text-slate-400 font-mono mt-0.5 block">{selectedBooking.assigned_vehicle_number || '—'}</span>
                 </div>
               )}
             </div>

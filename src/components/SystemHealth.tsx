@@ -48,11 +48,11 @@ export const SystemHealth: React.FC = () => {
       <div className="flex justify-between items-center border-b border-[#ffffff0c] pb-5">
         <div>
           <h1 className="text-xl font-black text-white tracking-tight flex items-center">
-            <Activity className="w-7 h-7 mr-2 text-[#F4B400]" /> System Health
+            <Activity className="w-7 h-7 mr-2 text-[#FFC107]" /> System Health
           </h1>
           <p className="text-[#AAB6C5] text-xs mt-1">Audit active microservice connections, server container load metrics, and database write connectivity indexes.</p>
         </div>
-        <button onClick={testConnection} className="bg-[#F4B400] text-[#020B18] shadow hover:bg-[#FFD766] transition rounded-lg px-3.5 py-1.5 font-bold text-xs uppercase tracking-wider cursor-pointer">
+        <button onClick={testConnection} className="bg-[#FFC107] text-[#020B18] shadow hover:bg-[#FFD54F] transition rounded-lg px-3.5 py-1.5 font-bold text-xs uppercase tracking-wider cursor-pointer">
           PING ENDPOINTS
         </button>
       </div>
@@ -69,7 +69,7 @@ export const SystemHealth: React.FC = () => {
           <div className="bg-[#061B35] p-5 rounded-xl border border-[#ffffff0c] space-y-3.5">
             <div className="flex justify-between items-center">
               <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Storage Node</span>
-              <Database className="w-5 h-5 text-[#F4B400]" />
+              <Database className="w-5 h-5 text-[#FFC107]" />
             </div>
             <div>
               <h3 className="text-base font-extrabold text-white">PostgreSQL Spanner DB</h3>
@@ -87,10 +87,10 @@ export const SystemHealth: React.FC = () => {
           <div className="bg-[#061B35] p-5 rounded-xl border border-[#ffffff0c] space-y-3.5">
             <div className="flex justify-between items-center">
               <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">External API Partner</span>
-              <MapPin className="w-5 h-5 text-[#F4B400]" />
+              <MapPin className="w-5 h-5 text-[#FFC107]" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-white">Google Maps JS Handshake</h3>
+              <h3 className="text-base font-extrabold text-white">Mapbox API Handshake</h3>
               <div className="flex items-center space-x-1.5 mt-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span className="text-xs text-emerald-400 font-bold uppercase font-mono">PLATFORM ACTIVE (200)</span>
@@ -105,7 +105,7 @@ export const SystemHealth: React.FC = () => {
           <div className="bg-[#061B35] p-5 rounded-xl border border-[#ffffff0c] space-y-3.5">
             <div className="flex justify-between items-center">
               <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Container Telemetry</span>
-              <Server className="w-5 h-5 text-[#F4B400]" />
+              <Server className="w-5 h-5 text-[#FFC107]" />
             </div>
             <div>
               <h3 className="text-base font-extrabold text-white">Core Express Webserver</h3>

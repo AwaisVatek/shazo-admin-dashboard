@@ -87,14 +87,14 @@ export const ZoneManagement: React.FC = () => {
       <div className="flex justify-between items-center border-b border-[#ffffff0c] pb-5">
         <div>
           <h1 className="text-xl font-black text-white tracking-tight flex items-center">
-            <Layers className="w-6 h-6 mr-2 text-[#F4B400]" /> Operational Zones & Coverage Settings
+            <Layers className="w-6 h-6 mr-2 text-[#FFC107]" /> Operational Zones & Coverage Settings
           </h1>
           <p className="text-slate-400 text-xs mt-1">Geofence boundary controllers, toggle active sectors, and induce surge pricing overrides across Pakistan.</p>
         </div>
       </div>
 
       {successMsg && (
-        <div className="bg-[#F4B400]/10 border border-[#F4B400]/20 text-[#F4B400] p-3 rounded-lg text-xs font-semibold">
+        <div className="bg-[#FFC107]/10 border border-[#FFC107]/20 text-[#FFC107] p-3 rounded-lg text-xs font-semibold">
           {successMsg}
         </div>
       )}
@@ -112,10 +112,10 @@ export const ZoneManagement: React.FC = () => {
           </div>
         ) :
           zones.map(zone => (
-          <div key={zone.id} className="bg-[#061B35] p-5 rounded-xl border border-[#ffffff0c] space-y-4 hover:border-[#F4B400]/30 transition">
+          <div key={zone.id} className="bg-[#061B35] p-5 rounded-xl border border-[#ffffff0c] space-y-4 hover:border-[#FFC107]/30 transition">
             <div className="flex justify-between items-start">
               <div className="flex items-center space-x-2">
-                <MapPin className="w-5 h-5 text-[#F4B400]" />
+                <MapPin className="w-5 h-5 text-[#FFC107]" />
                 <div>
                   <h3 className="text-white font-extrabold text-sm">{zone.name}</h3>
                   <span className="text-[10px] text-slate-500 block font-mono mt-0.5">{zone.id} • {zone.city}</span>
@@ -144,7 +144,7 @@ export const ZoneManagement: React.FC = () => {
                     className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition cursor-pointer ${
                       zone.demandIndex === demand 
                         ? demand === 'surge' ? 'bg-rose-500 text-white' :
-                          demand === 'high' ? 'bg-[#F4B400] text-[#020B18]' : 'bg-[#0B2A4A] text-slate-200'
+                          demand === 'high' ? 'bg-[#FFC107] text-[#020B18]' : 'bg-[#0B2A4A] text-slate-200'
                         : 'bg-[#020B18] text-slate-400 hover:text-white'
                     }`}
                   >

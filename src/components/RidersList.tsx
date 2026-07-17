@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
-import { 
-  Users, Bike, Car, Flame, Shield, Check, X, FileText, 
-  Wallet, DollarSign, Ban, MapPin, Eye, Star, AlertCircle 
+import {
+  Users, Bike, Car, Flame, Shield, Check, X, FileText,
+  Wallet, DollarSign, Ban, MapPin, Eye, Star, AlertCircle
 } from 'lucide-react';
 
+// Field names match GET /api/admin/riders exactly. This used to be a guessed
+// shape (`status`, `onlineStatus`, `services: []`, `vehicleNo`,
+// `walletBalance`) that never matched the real response — in particular
+// `services` was never returned at all, so `rider.services.map(...)` threw
+// on every render (the whole table crashed, not just showed blank data).
 interface Rider {
   id: string;
   name: string;
   phone: string;
-  status: 'verified' | 'pending' | 'rejected' | 'suspended';
-  onlineStatus: 'online' | 'offline';
-  services: ('bike' | 'car' | 'ambulance' | 'food')[];
-  vehicleNo: string;
-  vehicleModel: string;
-  walletBalance: number;
+  verification_status: 'verified' | 'pending' | 'rejected' | 'suspended' | string;
+  is_online: boolean;
+  vehicle_type: string | null;
+  vehicle_number: string | null;
+  vehicle_model: string | null;
+  balance: number;
   rating: number;
 }
 
@@ -68,9 +73,9 @@ export const RidersList: React.FC = () => {
 
   const handleUpdateStatus = async (riderId: string, status: 'verified' | 'rejected' | 'suspended', reason?: string) => {
     try {
-      await api.patch(`/api/admin/riders/${riderId}`, { status, reason });
+      await api.patch(`/api/admin/riders/${riderId}`, { status, rejection_reason: reason });
       loadRiders();
-      handleSelectRider(selectedRider!); // Reload details
+      if (selectedRider) handleSelectRider(selectedRider); // Reload details
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
         setErrorStatus('Backend endpoint not implemented yet.');
@@ -84,7 +89,7 @@ export const RidersList: React.FC = () => {
   const handleUpdateDocument = async (riderId: string, docId: string, status: 'verified' | 'rejected', reason?: string) => {
     try {
       await api.put(`/api/admin/riders/${riderId}/documents/${docId}`, { status, rejection_reason: reason });
-      handleSelectRider(selectedRider!);
+      if (selectedRider) handleSelectRider(selectedRider);
     } catch (err) {
       console.error("Failed to update document");
     }
@@ -93,7 +98,7 @@ export const RidersList: React.FC = () => {
   const handleUpdateVehicle = async (riderId: string, status: 'verified' | 'rejected', reason?: string) => {
     try {
       await api.put(`/api/admin/riders/${riderId}/vehicle`, { status, rejection_reason: reason });
-      handleSelectRider(selectedRider!);
+      if (selectedRider) handleSelectRider(selectedRider);
     } catch (err) {
       console.error("Failed to update vehicle");
     }
@@ -101,16 +106,18 @@ export const RidersList: React.FC = () => {
 
   const filtered = riders.filter(r => {
     if (statusFilter === 'all') return true;
-    if (statusFilter === 'online') return r.onlineStatus === 'online';
-    return r.status === statusFilter;
+    if (statusFilter === 'online') return r.is_online;
+    return r.verification_status === statusFilter;
   });
+
+  const initials = (name?: string) => String(name || '').split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2).toUpperCase() || '??';
 
   return (
     <div className="space-y-6 animate-fade-in text-xs">
       <div className="flex justify-between items-center border-b border-[#ffffff0c] pb-5">
         <div>
           <h1 className="text-xl font-black text-white tracking-tight flex items-center">
-            <Users className="w-6 h-6 mr-2 text-[#F4B400]" /> Rider Management
+            <Users className="w-6 h-6 mr-2 text-[#FFC107]" /> Rider Management
           </h1>
           <p className="text-slate-400 text-xs mt-1">Audit rider credentials, vehicle registrations, service-type toggles, and ledger balances.</p>
         </div>
@@ -129,8 +136,8 @@ export const RidersList: React.FC = () => {
             key={filter}
             onClick={() => setStatusFilter(filter)}
             className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
-              statusFilter === filter 
-                ? 'bg-[#F4B400] text-[#020B18] font-black' 
+              statusFilter === filter
+                ? 'bg-[#FFC107] text-[#020B18] font-black'
                 : 'text-slate-400 bg-[#020B18] hover:text-white'
             }`}
           >
@@ -145,7 +152,7 @@ export const RidersList: React.FC = () => {
             <thead className="bg-[#020B18] border-b border-[#ffffff0c] text-[10px] font-bold uppercase tracking-wider text-slate-400">
               <tr>
                 <th className="px-6 py-4">Rider Profile</th>
-                <th className="px-6 py-4">Approved Services</th>
+                <th className="px-6 py-4">Vehicle Type</th>
                 <th className="px-6 py-4">Vehicle Details</th>
                 <th className="px-6 py-4 text-right">Wallet</th>
                 <th className="px-6 py-4 text-right">Actions</th>
@@ -165,10 +172,10 @@ export const RidersList: React.FC = () => {
                     <div className="flex items-center space-x-3">
                       <div className="relative">
                         <div className="w-10 h-10 rounded-full bg-slate-700 font-extrabold flex items-center justify-center text-sm text-white">
-                          {String(rider?.name || '').split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0, 2).toUpperCase() || '??'}
+                          {initials(rider.name)}
                         </div>
                         <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-brand-navy-800 ${
-                          rider.onlineStatus === 'online' ? 'bg-emerald-400' : 'bg-slate-500'
+                          rider.is_online ? 'bg-emerald-400' : 'bg-slate-500'
                         }`} />
                       </div>
                       <div>
@@ -176,50 +183,46 @@ export const RidersList: React.FC = () => {
                         <div className="flex items-center space-x-2 mt-0.5">
                           <span className="text-xs text-slate-500 font-mono">{rider.id}</span>
                           <span className={`text-[10px] px-1.5 rounded font-bold uppercase leading-none ${
-                            rider.status === 'verified' ? 'bg-emerald-500/10 text-emerald-400' :
-                            rider.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-rose-500/10 text-rose-400'
+                            rider.verification_status === 'verified' ? 'bg-emerald-500/10 text-emerald-400' :
+                            rider.verification_status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' : 'bg-rose-500/10 text-rose-400'
                           }`}>
-                            {rider.status}
+                            {rider.verification_status}
                           </span>
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {rider.services.map(s => (
-                        <span key={s} className="px-1.5 py-0.5 bg-slate-900 rounded text-[10px] font-mono text-slate-400 uppercase">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
+                    <span className="px-1.5 py-0.5 bg-slate-900 rounded text-[10px] font-mono text-slate-400 uppercase">
+                      {rider.vehicle_type || '—'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-xs">
-                    <span className="text-white block font-medium">{rider.vehicleNo}</span>
-                    <span className="text-slate-500 mt-0.5 block">{rider.vehicleModel}</span>
+                    <span className="text-white block font-medium">{rider.vehicle_number || '—'}</span>
+                    <span className="text-slate-500 mt-0.5 block">{rider.vehicle_model || '—'}</span>
                   </td>
                   <td className="px-6 py-4 text-right font-mono text-xs font-semibold">
-                    <span className={rider.walletBalance < 0 ? 'text-rose-400' : 'text-slate-300'}>
-                      {rider.walletBalance.toLocaleString()} PKR
+                    <span className={Number(rider.balance) < 0 ? 'text-rose-400' : 'text-slate-300'}>
+                      {Number(rider.balance || 0).toLocaleString()} PKR
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
-                    <button 
-                      onClick={() => handleSelectRider(rider)} 
+                    <button
+                      onClick={() => handleSelectRider(rider)}
                       className="text-slate-405 hover:text-white hover:bg-slate-800 p-1.5 rounded"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
-                    {rider.status === 'pending' ? (
+                    {rider.verification_status === 'pending' ? (
                       <>
-                        <button 
+                        <button
                           onClick={() => handleUpdateStatus(rider.id, 'verified')}
                           className="text-emerald-400 hover:bg-emerald-500/10 p-1.5 rounded"
                           title="Verify Rider"
                         >
                           <Check className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleUpdateStatus(rider.id, 'rejected')}
                           className="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded"
                           title="Reject Rider"
@@ -228,12 +231,12 @@ export const RidersList: React.FC = () => {
                         </button>
                       </>
                     ) : (
-                      <button 
-                        onClick={() => handleUpdateStatus(rider.id, rider.status === 'suspended' ? 'verified' : 'suspended')}
+                      <button
+                        onClick={() => handleUpdateStatus(rider.id, rider.verification_status === 'suspended' ? 'verified' : 'suspended')}
                         className={`p-1.5 rounded ${
-                          rider.status === 'suspended' ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-rose-400 hover:bg-rose-500/10'
+                          rider.verification_status === 'suspended' ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-rose-400 hover:bg-rose-500/10'
                         }`}
-                        title={rider.status === 'suspended' ? 'Revoke suspension' : 'Suspend rider'}
+                        title={rider.verification_status === 'suspended' ? 'Revoke suspension' : 'Suspend rider'}
                       >
                         <Ban className="w-4 h-4" />
                       </button>
@@ -252,7 +255,7 @@ export const RidersList: React.FC = () => {
             <div className="space-y-6 text-xs">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 rounded-full bg-slate-700 font-extrabold flex items-center justify-center text-lg text-white">
-                  {String(selectedRider?.name || '').split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0, 2).toUpperCase() || '??'}
+                  {initials(selectedRider.name)}
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white block">{selectedRider.name}</h3>
@@ -262,7 +265,7 @@ export const RidersList: React.FC = () => {
 
               <div className="space-y-3.5 border-t border-[#ffffff0c] pt-4">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Credentials & Documents</h4>
-                
+
                 <div className="space-y-2.5 text-xs">
                   {!selectedDetails ? (
                     <div className="text-slate-500 italic">Loading documents...</div>
@@ -272,7 +275,7 @@ export const RidersList: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <div className="flex flex-col">
                             <span className="text-slate-400 flex items-center mb-0">
-                              <FileText className="w-3.5 h-3.5 mr-1.5 text-[#F4B400]" /> 
+                              <FileText className="w-3.5 h-3.5 mr-1.5 text-[#FFC107]" />
                               {doc.document_type.replace('_', ' ').toUpperCase()}
                             </span>
                             <a href={doc.file_url} target="_blank" className="text-[10px] text-blue-400 hover:underline ml-5 mt-1">View File</a>
@@ -312,7 +315,7 @@ export const RidersList: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-slate-500 block text-[10px] uppercase">Make/Model</span>
-                          <span className="text-slate-300 font-medium">{selectedDetails.vehicle.make_model} ({selectedDetails.vehicle.year})</span>
+                          <span className="text-slate-300 font-medium">{selectedDetails.vehicle.make_model}</span>
                         </div>
                         <div>
                           <span className="text-slate-500 block text-[10px] uppercase">Plate</span>
@@ -321,7 +324,7 @@ export const RidersList: React.FC = () => {
                         <div>
                           <span className="text-slate-500 block text-[10px] uppercase">Status</span>
                           <span className={`font-bold ${selectedDetails.vehicle.verification_status === 'verified' ? 'text-emerald-400' : selectedDetails.vehicle.verification_status === 'rejected' ? 'text-rose-400' : 'text-yellow-400'}`}>
-                            {selectedDetails.vehicle.verification_status.toUpperCase()}
+                            {selectedDetails.vehicle.verification_status?.toUpperCase()}
                           </span>
                         </div>
                       </div>
@@ -351,32 +354,32 @@ export const RidersList: React.FC = () => {
                 <div className="flex justify-between items-center p-3 bg-[#020B18] rounded-lg border border-[#ffffff0c]">
                   <div>
                     <span className="text-xs text-slate-500">Rider Balance</span>
-                    <span className="text-base font-mono font-bold text-white block mt-0.5">{selectedRider.walletBalance.toLocaleString()} PKR</span>
+                    <span className="text-base font-mono font-bold text-white block mt-0.5">{Number(selectedRider.balance || 0).toLocaleString()} PKR</span>
                   </div>
-                  <div className="p-2 bg-[#F4B400]/10 text-[#F4B400] rounded-lg">
+                  <div className="p-2 bg-[#FFC107]/10 text-[#FFC107] rounded-lg">
                     <Wallet className="w-5 h-5" />
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-2">
-                {selectedRider.status === 'pending' ? (
+                {selectedRider.verification_status === 'pending' ? (
                   <>
                     <input
                       type="text"
                       placeholder="Reason for Rejection (Optional)"
-                      className="w-full bg-[#020B18] border border-[#ffffff0c] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#F4B400]"
+                      className="w-full bg-[#020B18] border border-[#ffffff0c] text-slate-300 rounded-lg p-2.5 text-xs focus:outline-none focus:border-[#FFC107]"
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
                     />
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => handleUpdateStatus(selectedRider.id, 'verified')}
-                        className="flex-1 bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-black text-xs py-2.5 rounded-lg transition cursor-pointer font-bold uppercase"
+                        className="flex-1 bg-[#FFC107] hover:bg-[#FFD54F] text-[#020B18] font-black text-xs py-2.5 rounded-lg transition cursor-pointer font-bold uppercase"
                       >
                         Approve Driver
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleUpdateStatus(selectedRider.id, 'rejected', rejectionReason)}
                         className="flex-1 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs py-2.5 rounded-lg transition cursor-pointer font-bold uppercase"
                       >
@@ -386,14 +389,14 @@ export const RidersList: React.FC = () => {
                   </>
                 ) : (
                   <button
-                    onClick={() => handleUpdateStatus(selectedRider.id, selectedRider.status === 'suspended' ? 'verified' : 'suspended', rejectionReason)}
+                    onClick={() => handleUpdateStatus(selectedRider.id, selectedRider.verification_status === 'suspended' ? 'verified' : 'suspended', rejectionReason)}
                     className={`w-full font-bold py-2.5 text-xs rounded-lg transition cursor-pointer uppercase ${
-                      selectedRider.status === 'suspended'
-                        ? 'bg-[#F4B400] text-[#020B18] hover:bg-[#FFD766]'
+                      selectedRider.verification_status === 'suspended'
+                        ? 'bg-[#FFC107] text-[#020B18] hover:bg-[#FFD54F]'
                         : 'bg-rose-950/20 border border-rose-500/20 text-rose-400 hover:bg-rose-500/15'
                     }`}
                   >
-                    {selectedRider.status === 'suspended' ? 'Lift Suspension' : 'Block Rider Account'}
+                    {selectedRider.verification_status === 'suspended' ? 'Lift Suspension' : 'Block Rider Account'}
                   </button>
                 )}
               </div>

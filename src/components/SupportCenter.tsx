@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import { HelpCircle, AlertCircle, Eye, Check, Send, Sparkles, MessageSquare } from 'lucide-react';
 
+// Real support_tickets columns + a joined sender_name/sender_type (the table
+// has no display name of its own, and no source_type column — sender_type is
+// derived from the user's role instead). priority/status are free-text in
+// production (seen values include "normal", not a fixed low/medium/high/
+// urgent enum), so both are typed loosely rather than as a strict union.
 interface Ticket {
   id: string;
-  senderName: string;
-  senderType: 'customer' | 'rider' | 'restaurant';
+  sender_name: string | null;
+  sender_type: string;
   subject: string;
   description: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'open' | 'pending' | 'resolved';
-  createdAt: string;
+  priority: string;
+  status: string;
+  created_at: string;
 }
 
 export const SupportCenter: React.FC = () => {
@@ -67,7 +72,7 @@ export const SupportCenter: React.FC = () => {
     if (!replyText || !selectedTicket) return;
     try {
       await api.post(`/api/admin/support/tickets/${selectedTicket.id}/reply`, { replyText });
-      setSuccessMsg(`Custom reply dispatched successfully to ${selectedTicket.senderName}!`);
+      setSuccessMsg(`Custom reply dispatched successfully to ${selectedTicket.sender_name || 'user'}!`);
       setReplyText('');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
@@ -85,7 +90,7 @@ export const SupportCenter: React.FC = () => {
       <div className="xl:col-span-12 flex justify-between items-center border-b border-[#ffffff0c] pb-5">
         <div>
           <h1 className="text-xl font-black text-white tracking-tight flex items-center">
-            <MessageSquare className="w-7 h-7 mr-2 text-[#F4B400]" /> Customer Support Tickets
+            <MessageSquare className="w-7 h-7 mr-2 text-[#FFC107]" /> Customer Support Tickets
           </h1>
           <p className="text-slate-400 text-xs mt-1">Audit guest issues, reply directly to active dispute chats, and fast-track priority resolutions.</p>
         </div>
@@ -129,8 +134,8 @@ export const SupportCenter: React.FC = () => {
                 <tr key={t.id} className="hover:bg-slate-900/20 transition">
                   <td className="px-6 py-4 font-mono text-xs">{t.id}</td>
                   <td className="px-6 py-4 text-xs">
-                    <span className="text-white block font-semibold">{t.senderName}</span>
-                    <span className="text-[10px] text-slate-500 block uppercase font-bold mt-1">{t.senderType}</span>
+                    <span className="text-white block font-semibold">{t.sender_name || 'Unknown user'}</span>
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold mt-1">{t.sender_type}</span>
                   </td>
                   <td className="px-6 py-4 text-xs max-w-xs truncate text-slate-400">
                     <span className="text-white block font-medium truncate">{t.subject}</span>
@@ -138,8 +143,8 @@ export const SupportCenter: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      t.priority === 'critical' ? 'bg-rose-500/15 text-rose-400' :
-                      t.priority === 'high' ? 'bg-[#F4B400]/15 text-[#F4B400]' : 'bg-[#020B18] text-slate-400'
+                      ['urgent', 'critical'].includes(t.priority?.toLowerCase()) ? 'bg-rose-500/15 text-rose-400' :
+                      t.priority?.toLowerCase() === 'high' ? 'bg-[#FFC107]/15 text-[#FFC107]' : 'bg-[#020B18] text-slate-400'
                     }`}>
                       {t.priority}
                     </span>
@@ -165,9 +170,9 @@ export const SupportCenter: React.FC = () => {
         {selectedTicket ? (
           <div className="space-y-4 text-xs">
             <div className="border-b border-[#ffffff0c] pb-3">
-              <span className="text-xs text-slate-500 font-mono block">{selectedTicket.id} • {selectedTicket.createdAt}</span>
+              <span className="text-xs text-slate-500 font-mono block">{selectedTicket.id} • {new Date(selectedTicket.created_at).toLocaleString()}</span>
               <h3 className="text-sm font-extrabold text-white mt-1">Claim: {selectedTicket.subject}</h3>
-              <p className="text-xs text-[#F4B400] mt-1">By: {selectedTicket.senderName} ({selectedTicket.senderType})</p>
+              <p className="text-xs text-[#FFC107] mt-1">By: {selectedTicket.sender_name || 'Unknown user'} ({selectedTicket.sender_type})</p>
             </div>
 
             <div className="bg-[#020B18] p-3 rounded-lg border border-[#ffffff0c] text-xs text-slate-400 whitespace-pre-line leading-relaxed">
@@ -183,18 +188,18 @@ export const SupportCenter: React.FC = () => {
                   placeholder="Draft resolution parameters..."
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  className="w-full bg-[#020B18] border border-[#ffffff0c] text-white font-medium text-xs p-3 rounded-lg focus:outline-none focus:border-[#F4B400]/50 placeholder-slate-550"
+                  className="w-full bg-[#020B18] border border-[#ffffff0c] text-white font-medium text-xs p-3 rounded-lg focus:outline-none focus:border-[#FFC107]/50 placeholder-slate-550"
                 />
               </div>
 
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-black text-xs py-2.5 rounded-lg transition uppercase flex items-center justify-center tracking-wider cursor-pointer"
+                  className="flex-1 bg-[#FFC107] hover:bg-[#FFD54F] text-[#020B18] font-black text-xs py-2.5 rounded-lg transition uppercase flex items-center justify-center tracking-wider cursor-pointer"
                 >
                   <Send className="w-3.5 h-3.5 mr-2" /> DISPATCH REPLY
                 </button>
-                {selectedTicket.status !== 'resolved' && (
+                {selectedTicket.status !== 'resolved' && selectedTicket.status !== 'closed' && (
                   <button
                     type="button"
                     onClick={() => handleResolve(selectedTicket.id)}

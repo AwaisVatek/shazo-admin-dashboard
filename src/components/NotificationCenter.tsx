@@ -2,12 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import { Bell, MapPin, Check, Send, AlertCircle, RefreshCw, MessageSquare } from 'lucide-react';
 
+// Backed by admin_broadcasts (one row per broadcast, real target_audience +
+// created_at). POST fans out an actual per-user notifications row per
+// matching role — it previously only wrote one row scoped to the admin's own
+// user_id, so no customer/rider ever received the "broadcast".
 interface NotificationLog {
   id: string;
   title: string;
   body: string;
-  targetAudience: 'customers' | 'riders' | 'restaurants' | 'all';
-  dispatchedAt: string;
+  target_audience: 'customers' | 'riders' | 'restaurants' | 'all';
+  created_at: string;
 }
 
 export const NotificationCenter: React.FC = () => {
@@ -50,16 +54,10 @@ export const NotificationCenter: React.FC = () => {
 
   const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newLog: NotificationLog = {
-      id: `NTF-${Date.now().toString().slice(-3)}`,
-      title,
-      body,
-      targetAudience,
-      dispatchedAt: new Date().toLocaleDateString()
-    };
-
     try {
-      await api.post('/api/admin/notifications', newLog);
+      const result = await api.post('/api/admin/notifications', { title, body, targetAudience });
+      setSuccessMsg(result?.message || 'Notification broadcast successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
       loadLogs();
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
@@ -79,7 +77,7 @@ export const NotificationCenter: React.FC = () => {
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-fade-in text-xs">
       <div className="xl:col-span-12 border-b border-[#ffffff0c] pb-5">
         <h1 className="text-xl font-black text-white tracking-tight flex items-center">
-          <Bell className="w-7 h-7 mr-2 text-[#F4B400]" /> System Notifications
+          <Bell className="w-7 h-7 mr-2 text-[#FFC107]" /> System Notifications
         </h1>
         <p className="text-[#AAB6C5] text-xs mt-1">Broadcast high-impact system alerts, marketing vouchers or critical warnings immediately to multi-app targets.</p>
       </div>
@@ -109,11 +107,11 @@ export const NotificationCenter: React.FC = () => {
             <div key={log.id} className="bg-[#061B35] p-4 rounded-xl border border-[#ffffff0c] space-y-2">
               <div className="flex justify-between items-start">
                 <div>
-                  <span className="text-[10px] text-slate-550 font-mono block mb-0.5">{log.id} • {log.dispatchedAt}</span>
+                  <span className="text-[10px] text-slate-550 font-mono block mb-0.5">{log.id} • {new Date(log.created_at).toLocaleString()}</span>
                   <h3 className="text-white font-bold text-sm">{log.title}</h3>
                 </div>
-                <span className="bg-[#020B18] inline-block px-1.5 py-0.5 text-[10px] font-bold text-[#F4B400] uppercase tracking-wide rounded">
-                  To: {log.targetAudience}
+                <span className="bg-[#020B18] inline-block px-1.5 py-0.5 text-[10px] font-bold text-[#FFC107] uppercase tracking-wide rounded">
+                  To: {log.target_audience}
                 </span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap">{log.body}</p>
@@ -131,7 +129,7 @@ export const NotificationCenter: React.FC = () => {
             <select
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value as any)}
-              className="w-full bg-[#020B18] border border-[#ffffff0c] py-2.5 px-3 rounded-lg text-white font-medium focus:outline-none focus:border-[#F4B400]/50 mt-1.5 cursor-pointer"
+              className="w-full bg-[#020B18] border border-[#ffffff0c] py-2.5 px-3 rounded-lg text-white font-medium focus:outline-none focus:border-[#FFC107]/50 mt-1.5 cursor-pointer"
             >
               <option value="all">Broad Audience (Everyone)</option>
               <option value="customers">Customers Android App Only</option>
@@ -148,7 +146,7 @@ export const NotificationCenter: React.FC = () => {
               placeholder="e.g. Free ride quotas today!"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-[#020B18] border border-[#ffffff0c] py-2.5 px-3 rounded-lg text-white font-bold focus:outline-none focus:border-[#F4B400]/50 mt-1.5"
+              className="w-full bg-[#020B18] border border-[#ffffff0c] py-2.5 px-3 rounded-lg text-white font-bold focus:outline-none focus:border-[#FFC107]/50 mt-1.5"
             />
           </div>
 
@@ -160,13 +158,13 @@ export const NotificationCenter: React.FC = () => {
               placeholder="Keep messages under 150 characters for clean lock screen rendering..."
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              className="w-full bg-[#020B18] border border-[#ffffff0c] text-white font-medium p-3 rounded-lg focus:outline-none focus:border-[#F4B400]/50 placeholder-slate-550 mt-1.5"
+              className="w-full bg-[#020B18] border border-[#ffffff0c] text-white font-medium p-3 rounded-lg focus:outline-none focus:border-[#FFC107]/50 placeholder-slate-550 mt-1.5"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-black py-2.5 rounded-lg text-xs transition uppercase tracking-wider flex items-center justify-center cursor-pointer"
+            className="w-full bg-[#FFC107] hover:bg-[#FFD54F] text-[#020B18] font-black py-2.5 rounded-lg text-xs transition uppercase tracking-wider flex items-center justify-center cursor-pointer"
           >
             <Send className="w-4 h-4 mr-2" /> TRANSMIT BROADCAST
           </button>

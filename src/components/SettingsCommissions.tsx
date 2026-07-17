@@ -6,10 +6,26 @@ import {
 } from 'lucide-react';
 
 interface CommissionSetting {
-  serviceType: 'bike' | 'car' | 'ambulance' | 'food';
+  serviceType: string;
+  serviceLabel?: string;
   commissionPercentage: number;
   minCommissionPKR: number;
   variablePeakHourlyCharge: boolean;
+}
+
+// GET /api/admin/settings/commissions returns snake_case
+// (commission_percentage, minimum_platform_cut, commission_type) — this
+// component's state/handlers/POST all use camelCase. Without this transform,
+// every field loads blank and saving would zero out real commission rates
+// (same class of bug found and fixed in SettingsFares.tsx).
+function toCamelCommission(row: any): CommissionSetting {
+  return {
+    serviceType: row.service_type,
+    serviceLabel: row.name,
+    commissionPercentage: Number(row.commission_percentage || 0),
+    minCommissionPKR: Number(row.minimum_platform_cut || 0),
+    variablePeakHourlyCharge: row.commission_type === 'variable',
+  };
 }
 
 export const SettingsCommissions: React.FC = () => {
@@ -24,7 +40,7 @@ export const SettingsCommissions: React.FC = () => {
       setErrorStatus(null);
       const data = await api.get('/api/admin/settings/commissions');
       if (data && data.length > 0) {
-        setCommissions(data);
+        setCommissions(data.map(toCamelCommission));
       } else {
         setCommissions([]);
         setErrorStatus('No data available.');
@@ -126,7 +142,7 @@ export const SettingsCommissions: React.FC = () => {
                     {comm.serviceType === 'bike' && <Bike className="w-5 h-5 text-indigo-400" />}
                     {comm.serviceType === 'car' && <Car className="w-5 h-5 text-emerald-400" />}
                     {comm.serviceType === 'ambulance' && <Shield className="w-5 h-5 text-rose-500" />}
-                    {comm.serviceType === 'food' && <Flame className="w-5 h-5 text-amber-500" />}
+                    {(comm.serviceType === 'food_delivery' || comm.serviceType === 'restaurant') && <Flame className="w-5 h-5 text-amber-500" />}
                   </div>
                   <div>
                     <span className="text-white font-black uppercase text-sm">{comm.serviceType} Split</span>

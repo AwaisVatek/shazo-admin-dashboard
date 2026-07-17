@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import { Users, User, Shield, AlertCircle, Plus, Key, RefreshCw } from 'lucide-react';
 
+// GET /staff-users selects id, full_name, email, phone, role, is_verified,
+// created_at from users — there is no separate "status" column.
 interface StaffUser {
   id: string;
-  name: string;
+  full_name: string;
   email: string;
   role: 'admin' | 'operations_manager' | 'finance_admin' | 'support_agent';
-  status: 'active' | 'inactive';
+  is_verified: boolean;
 }
 
 export const AdminUsers: React.FC = () => {
@@ -50,28 +52,24 @@ export const AdminUsers: React.FC = () => {
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newStaff: StaffUser = {
-      id: `STAFF-${Date.now().toString().slice(-3)}`,
-      name,
-      email,
-      role,
-      status: 'active'
-    };
-
     try {
-      await api.post('/api/admin/staff-users', newStaff);
+      // Server generates the account id + a one-time temp password (there's
+      // no email/SMS delivery wired up yet, so it comes back in the response
+      // for the admin to hand off directly).
+      const result = await api.post('/api/admin/staff-users', { name, email, role });
+      setSuccessMsg(`Staff account created! Temp password: ${result?.tempPassword} — share this securely, it won't be shown again.`);
+      setTimeout(() => setSuccessMsg(null), 15000);
       loadData();
+      setName('');
+      setEmail('');
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
         setErrorStatus('Backend endpoint not implemented yet.');
       } else {
-        setErrorStatus('Unable to save changes to backend.');
+        setErrorStatus(err.message || 'Unable to save changes to backend.');
       }
-      setTimeout(() => setErrorStatus(null), 3000);
+      setTimeout(() => setErrorStatus(null), 4000);
     }
-
-    setName('');
-    setEmail('');
   };
 
   return (
@@ -123,9 +121,9 @@ export const AdminUsers: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2.5">
                       <div className="w-8 h-8 rounded-full bg-slate-900 text-slate-400 flex items-center justify-center font-bold">
-                        {String(u?.name || '').split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0, 2).toUpperCase() || '??'}
+                        {String(u?.full_name || '').split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0, 2).toUpperCase() || '??'}
                       </div>
-                      <span className="text-white font-semibold">{u.name}</span>
+                      <span className="text-white font-semibold">{u.full_name}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 font-mono text-slate-400">{u.email}</td>
@@ -134,8 +132,8 @@ export const AdminUsers: React.FC = () => {
                       {u.role.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-emerald-400 text-right font-bold uppercase text-[10px]">
-                    {u.status}
+                  <td className={`px-6 py-4 text-right font-bold uppercase text-[10px] ${u.is_verified ? 'text-emerald-400' : 'text-slate-500'}`}>
+                    {u.is_verified ? 'verified' : 'unverified'}
                   </td>
                 </tr>
               ))}

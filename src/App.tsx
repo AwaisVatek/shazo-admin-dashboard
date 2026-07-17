@@ -170,7 +170,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#020B18] flex items-center justify-center p-4 relative overflow-hidden select-none">
         {/* Absolute branding graphics */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#F4B400]/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#FFC107]/5 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute top-10 left-10 opacity-30 pointer-events-none">
           <ShazoLogo variant="square" tone="white" className="h-12" />
         </div>
@@ -197,7 +197,7 @@ export default function App() {
                 placeholder="admin@shazoride.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#020B18]/70 border border-[#ffffff0c] py-3 px-3.5 rounded-xl text-white font-medium focus:outline-none focus:border-[#F4B400]/50 transition"
+                className="w-full bg-[#020B18]/70 border border-[#ffffff0c] py-3 px-3.5 rounded-xl text-white font-medium focus:outline-none focus:border-[#FFC107]/50 transition"
               />
             </div>
 
@@ -209,14 +209,14 @@ export default function App() {
                 placeholder="••••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#020B18]/70 border border-[#ffffff0c] py-3 px-3.5 rounded-xl text-white font-medium focus:outline-none focus:border-[#F4B400]/50 transition"
+                className="w-full bg-[#020B18]/70 border border-[#ffffff0c] py-3 px-3.5 rounded-xl text-white font-medium focus:outline-none focus:border-[#FFC107]/50 transition"
               />
             </div>
 
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full bg-[#F4B400] hover:bg-[#FFD766] disabled:opacity-45 text-[#020B18] font-black tracking-widest uppercase text-xs rounded-xl py-3.5 mt-2 shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer"
+              className="w-full bg-[#FFC107] hover:bg-[#FFD54F] disabled:opacity-45 text-[#020B18] font-black tracking-widest uppercase text-xs rounded-xl py-3.5 mt-2 shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer"
             >
               <Lock className="w-4 h-4 text-[#020B18]" />
               <span>{loginLoading ? 'VERIFYING...' : 'SIGN IN'}</span>
@@ -239,7 +239,7 @@ export default function App() {
           <div className="p-5 border-b border-[#ffffff0c] flex items-center justify-between">
             <ShazoLogo variant={sidebarOpen ? 'horizontal' : 'icon'} tone="white" className="h-8" purpose={sidebarOpen ? "sidebar" : "icon"} />
             {sidebarOpen && (
-              <span className="text-[9px] font-bold text-[#F4B400] bg-[#F4B400]/10 px-1.5 py-0.5 rounded uppercase font-mono tracking-widest font-bold">
+              <span className="text-[9px] font-bold text-[#FFC107] bg-[#FFC107]/10 px-1.5 py-0.5 rounded uppercase font-mono tracking-widest font-bold">
                 ADMIN
               </span>
             )}
@@ -251,7 +251,7 @@ export default function App() {
             const initials = String(displayName).split(' ').filter(Boolean).map((n:any)=>n[0]).join('').slice(0, 2).toUpperCase() || 'SA';
             return (
               <div className="p-4 mx-4 mt-4 bg-[#0B2A4A]/50 border border-[#ffffff0c] rounded-xl flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-full bg-[#020B18] flex items-center justify-center text-xs font-bold text-[#F4B400] border border-[#ffffff0f]">
+                <div className="w-9 h-9 rounded-full bg-[#020B18] flex items-center justify-center text-xs font-bold text-[#FFC107] border border-[#ffffff0f]">
                   {initials}
                 </div>
                 <div className="overflow-hidden">
@@ -272,7 +272,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('overview')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'overview' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'overview' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Activity className="w-4 h-4 mr-3 shrink-0" />
@@ -284,7 +284,7 @@ export default function App() {
                 <button
                    onClick={() => setActiveTab('dispatch')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'dispatch' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'dispatch' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <MapPin className="w-4 h-4 mr-3 shrink-0" />
@@ -301,7 +301,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('customers')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'customers' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'customers' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <User className="w-4 h-4 mr-3 shrink-0" />
@@ -313,7 +313,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('riders')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'riders' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'riders' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Bike className="w-4 h-4 mr-3 shrink-0" />
@@ -325,7 +325,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('restaurants')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'restaurants' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'restaurants' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Flame className="w-4 h-4 mr-3 shrink-0" />
@@ -337,7 +337,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('rides')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'rides' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'rides' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Car className="w-4 h-4 mr-3 shrink-0" />
@@ -349,7 +349,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('ambulance')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'ambulance' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'ambulance' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Shield className="w-4 h-4 mr-3 text-rose-500 shrink-0" />
@@ -361,7 +361,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('food_orders')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'food_orders' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'food_orders' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Utensils className="w-4 h-4 mr-3 shrink-0" />
@@ -378,7 +378,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('finance')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'finance' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'finance' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Landmark className="w-4 h-4 mr-3 shrink-0" />
@@ -390,7 +390,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('manual_payments')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'manual_payments' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'manual_payments' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Landmark className="w-4 h-4 mr-3 shrink-0" />
@@ -402,7 +402,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('commissions')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'commissions' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'commissions' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Percent className="w-4 h-4 mr-3 shrink-0" />
@@ -419,7 +419,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('fares')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'fares' ? 'bg-[#F4B400] text-[#020B18] font-black text-left' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40 text-left'
+                    activeTab === 'fares' ? 'bg-[#FFC107] text-[#020B18] font-black text-left' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40 text-left'
                   }`}
                 >
                   <Layers className="w-4 h-4 mr-3 shrink-0" />
@@ -431,7 +431,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('promo_campaigns')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'promo_campaigns' ? 'bg-[#F4B400] text-[#020B18] font-black text-left' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40 text-left'
+                    activeTab === 'promo_campaigns' ? 'bg-[#FFC107] text-[#020B18] font-black text-left' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40 text-left'
                   }`}
                 >
                   <Gift className="w-4 h-4 mr-3 shrink-0" />
@@ -443,7 +443,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('zones')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'zones' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'zones' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <MapPin className="w-4 h-4 mr-3 shrink-0" />
@@ -455,7 +455,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('app_settings')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'app_settings' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'app_settings' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Smartphone className="w-4 h-4 mr-3 shrink-0" />
@@ -472,7 +472,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('support')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'support' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'support' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <HelpCircle className="w-4 h-4 mr-3 shrink-0" />
@@ -484,7 +484,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('safety')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'safety' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'safety' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <ShieldAlert className="w-4 h-4 mr-3 text-rose-500 shrink-0" />
@@ -496,7 +496,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('notification_center')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'notification_center' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'notification_center' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Bell className="w-4 h-4 mr-3 shrink-0" />
@@ -508,7 +508,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('health')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'health' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'health' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Activity className="w-4 h-4 mr-3 shrink-0" />
@@ -520,7 +520,7 @@ export default function App() {
                 <button
                   onClick={() => setActiveTab('admin_users')}
                   className={`w-full flex items-center justify-start text-left px-2.5 py-2.2 rounded-lg text-xs font-medium uppercase tracking-wider transition cursor-pointer ${
-                    activeTab === 'admin_users' ? 'bg-[#F4B400] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
+                    activeTab === 'admin_users' ? 'bg-[#FFC107] text-[#020B18] font-black' : 'text-[#AAB6C5] hover:text-white hover:bg-[#0B2A4A]/40'
                   }`}
                 >
                   <Shield className="w-4 h-4 mr-3 shrink-0" />
@@ -561,7 +561,7 @@ export default function App() {
 
           <div className="flex items-center space-x-4">
             <div className="bg-[#020B18] border border-[#ffffff0c] rounded-lg py-1 px-3 text-xs text-slate-300 font-bold uppercase tracking-wide flex items-center">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#F4B400] mr-2 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#FFC107] mr-2 animate-pulse" />
               Karachi Operations
             </div>
           </div>

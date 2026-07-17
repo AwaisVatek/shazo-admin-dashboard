@@ -1,22 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
-import { 
-  Gift, Percent, ToggleLeft, ToggleRight, Plus, 
-  Trash2, Play, AlertCircle, Save, Calendar, Sparkles 
+import {
+  Gift, Percent, ToggleLeft, ToggleRight, Plus,
+  Trash2, Play, AlertCircle, Save, Calendar, Sparkles
 } from 'lucide-react';
 
+// Field names match the real free_ride_campaigns columns exactly. There is no
+// coupon-code / percentage-discount concept anywhere in the schema — this
+// only supports a free-ride quota campaign (a running counter with a cap),
+// scoped to a service type. The previous version modeled a voucher-code +
+// discount-percentage system that the backend never actually stored (POST
+// wrote to columns that didn't exist, so campaign creation silently did
+// nothing) — fixed on both sides.
 interface Campaign {
   id: string;
   name: string;
-  code: string;
-  type: 'free_ride' | 'discount_percentage';
-  discountValue: number;
-  maxDiscount?: number;
-  totalLimit: number;
-  usedCount: number;
-  status: 'active' | 'paused';
-  expiryDate: string;
+  service_type: string;
+  total_quota: number;
+  total_used: number;
+  is_active: boolean;
+  starts_at: string;
+  ends_at: string;
 }
+
+const SERVICE_TYPES = ['bike', 'car', 'ambulance', 'food_delivery', 'restaurant'];
 
 export const PromoCampaigns: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -24,14 +31,11 @@ export const PromoCampaigns: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
 
-  // Form states
+  // Form state
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [type, setType] = useState<'free_ride' | 'discount_percentage'>('discount_percentage');
-  const [discountValue, setDiscountValue] = useState(20);
-  const [maxDiscount, setMaxDiscount] = useState(150);
-  const [totalLimit, setTotalLimit] = useState(100);
-  const [expiryDate, setExpiryDate] = useState('2026-07-30');
+  const [serviceType, setServiceType] = useState('bike');
+  const [totalQuota, setTotalQuota] = useState(100);
+  const [endsAt, setEndsAt] = useState('2026-07-30');
 
   const loadCampaigns = async () => {
     try {
@@ -61,9 +65,8 @@ export const PromoCampaigns: React.FC = () => {
   }, []);
 
   const handleToggleStatus = async (item: Campaign) => {
-    const nextStatus = item.status === 'active' ? 'paused' : 'active';
     try {
-      await api.patch(`/api/admin/promo-campaigns/${item.id}`, { status: nextStatus });
+      await api.patch(`/api/admin/promo-campaigns/${item.id}`, { status: item.is_active ? 'paused' : 'active' });
       loadCampaigns();
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
@@ -77,22 +80,17 @@ export const PromoCampaigns: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newCamp: Campaign = {
-      id: `PROM-${Date.now().toString().slice(-4)}`,
-      name,
-      code: code.toUpperCase().trim(),
-      type,
-      discountValue: type === 'free_ride' ? 100 : discountValue,
-      maxDiscount: type === 'free_ride' ? 350 : maxDiscount,
-      totalLimit,
-      usedCount: 0,
-      status: 'active',
-      expiryDate
-    };
-
     try {
-      await api.post('/api/admin/promo-campaigns', newCamp);
+      await api.post('/api/admin/promo-campaigns', {
+        name,
+        service_type: serviceType,
+        total_quota: totalQuota,
+        ends_at: endsAt ? new Date(endsAt).toISOString() : undefined,
+        is_active: true,
+      });
       loadCampaigns();
+      setSuccessMsg('Campaign created successfully!');
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
       if (err.status === 404 || err.message === 'NOT_IMPLEMENTED') {
         setErrorStatus('Backend endpoint not implemented yet.');
@@ -102,10 +100,8 @@ export const PromoCampaigns: React.FC = () => {
       setTimeout(() => setErrorStatus(null), 3000);
     }
 
-    // Reset Form
     setName('');
-    setCode('');
-    setTotalLimit(100);
+    setTotalQuota(100);
   };
 
   return (
@@ -113,9 +109,9 @@ export const PromoCampaigns: React.FC = () => {
       <div className="flex justify-between items-center border-b border-[#ffffff0c] pb-5">
         <div>
           <h1 className="text-xl font-black text-white tracking-tight flex items-center">
-            <Sparkles className="w-7 h-7 mr-2 text-[#F4B400]" /> Marketing Growth Campaigns
+            <Sparkles className="w-7 h-7 mr-2 text-[#FFC107]" /> Free Ride Campaigns
           </h1>
-          <p className="text-[#AAB6C5] text-xs mt-1">Configure company-wide promo cuts or limit strict free ride initiatives with monitored total quotas.</p>
+          <p className="text-[#AAB6C5] text-xs mt-1">Configure free-ride quota campaigns per service type with a monitored total cap. No coupon codes — quota-based only.</p>
         </div>
       </div>
 
@@ -134,19 +130,19 @@ export const PromoCampaigns: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Left List Pane */}
         <div className="xl:col-span-2 space-y-4">
-          <h2 className="text-white font-bold text-xs uppercase tracking-wider text-slate-400">Target Promos Ledger</h2>
+          <h2 className="text-white font-bold text-xs uppercase tracking-wider text-slate-400">Active Campaigns</h2>
           <div className="bg-[#061B35] rounded-xl border border-[#ffffff0c] overflow-hidden">
             <table className="w-full text-left text-xs text-slate-300">
               <thead className="bg-[#020B18] border-b border-[#ffffff0c] text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 <tr>
-                  <th className="px-6 py-4">Campaign Particulars</th>
-                  <th className="px-6 py-4">Promo Code</th>
-                  <th className="px-6 py-4">Utilisation Gauge</th>
+                  <th className="px-6 py-4">Campaign</th>
+                  <th className="px-6 py-4">Service</th>
+                  <th className="px-6 py-4">Quota Usage</th>
                   <th className="px-6 py-4 text-center">Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/40 font-medium font-medium">
+              <tbody className="divide-y divide-slate-800/40 font-medium">
                 {campaigns.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="text-center py-8 text-slate-400 text-xs text-slate-500">
@@ -154,53 +150,50 @@ export const PromoCampaigns: React.FC = () => {
                     </td>
                   </tr>
                 ) :
-                  campaigns.map(camp => {
-                  const isFree = camp.type === 'free_ride';
-                  return (
-                    <tr key={camp.id} className="hover:bg-slate-900/40 transition">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2.5">
-                          <Gift className={`w-4 h-4 ${isFree ? 'text-[#F4B400]' : 'text-indigo-400'}`} />
-                          <div>
-                            <span className="text-white font-semibold block text-xs">{camp.name}</span>
-                            <span className="text-[10px] text-slate-500 block uppercase font-bold mt-0.5 mt-1">
-                              {isFree ? '100% Free Campaign' : `${camp.discountValue}% General Discount`}
-                            </span>
-                          </div>
+                  campaigns.map(camp => (
+                  <tr key={camp.id} className="hover:bg-slate-900/40 transition">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center space-x-2.5">
+                        <Gift className="w-4 h-4 text-[#FFC107]" />
+                        <div>
+                          <span className="text-white font-semibold block text-xs">{camp.name}</span>
+                          <span className="text-[10px] text-slate-500 block uppercase font-bold mt-0.5">
+                            Until {camp.ends_at ? new Date(camp.ends_at).toLocaleDateString() : '—'}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-xs">{camp.code}</td>
-                      <td className="px-6 py-4 text-xs">
-                        <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                          <span>USED: {camp.usedCount}</span>
-                          <span>CAP: {camp.totalLimit}</span>
-                        </div>
-                        <div className="w-full bg-[#020B18] rounded-full h-1.5 overflow-hidden">
-                          <div 
-                            className={`h-full ${isFree ? 'bg-[#F4B400]' : 'bg-indigo-400'}`} 
-                            style={{ width: `${Math.min(100, (camp.usedCount / camp.totalLimit) * 100)}%` }} 
-                          />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                          camp.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 animate-pulse' : 'bg-slate-500/15 text-slate-500'
-                        }`}>
-                          {camp.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button 
-                          onClick={() => handleToggleStatus(camp)}
-                          className="text-slate-400 hover:text-white cursor-pointer"
-                          title={camp.status === 'active' ? 'Pause Campaign' : 'Resume Campaign'}
-                        >
-                          {camp.status === 'active' ? <ToggleRight className="w-8 h-8 text-emerald-400" /> : <ToggleLeft className="w-8 h-8 text-slate-500" />}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs uppercase">{camp.service_type}</td>
+                    <td className="px-6 py-4 text-xs">
+                      <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                        <span>USED: {camp.total_used}</span>
+                        <span>CAP: {camp.total_quota}</span>
+                      </div>
+                      <div className="w-full bg-[#020B18] rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="h-full bg-[#FFC107]"
+                          style={{ width: `${camp.total_quota > 0 ? Math.min(100, (camp.total_used / camp.total_quota) * 100) : 0}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        camp.is_active ? 'bg-emerald-500/10 text-emerald-400 animate-pulse' : 'bg-slate-500/15 text-slate-500'
+                      }`}>
+                        {camp.is_active ? 'active' : 'paused'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => handleToggleStatus(camp)}
+                        className="text-slate-400 hover:text-white cursor-pointer"
+                        title={camp.is_active ? 'Pause Campaign' : 'Resume Campaign'}
+                      >
+                        {camp.is_active ? <ToggleRight className="w-8 h-8 text-emerald-400" /> : <ToggleLeft className="w-8 h-8 text-slate-500" />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -208,7 +201,7 @@ export const PromoCampaigns: React.FC = () => {
 
         {/* Right Form Creation Pane */}
         <div className="xl:col-span-12 lg:col-span-5 bg-[#061B35] rounded-xl border border-[#ffffff0c] p-5 space-y-4">
-          <h2 className="text-white font-bold text-xs uppercase tracking-wider text-[#AAB6C5]">Launch New Promo Code</h2>
+          <h2 className="text-white font-bold text-xs uppercase tracking-wider text-[#AAB6C5]">Launch New Campaign</h2>
           <form onSubmit={handleCreate} className="space-y-3.5 text-xs text-slate-350">
             <div>
               <label className="text-slate-505 font-bold uppercase block text-[#AAB6C5]">Campaign Name</label>
@@ -218,92 +211,55 @@ export const PromoCampaigns: React.FC = () => {
                 placeholder="e.g. Clifton Launch Promo"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white font-medium focus:outline-none focus:border-[#F4B400]/50 mt-1"
+                className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white font-medium focus:outline-none focus:border-[#FFC107]/50 mt-1"
               />
             </div>
 
             <div>
-              <label className="text-slate-550 font-bold uppercase block text-[#AAB6C5]">Voucher Code</label>
-              <input
-                type="text"
-                required
-                placeholder="Voucher Code (uppercase)"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white font-mono focus:outline-none focus:border-[#F4B400]/50 mt-1"
-              />
-            </div>
-
-            <div>
-              <label className="text-slate-550 font-bold uppercase block text-[#AAB6C5]">Incentive Mechanism Type</label>
+              <label className="text-slate-550 font-bold uppercase block text-[#AAB6C5]">Service Type</label>
               <select
-                value={type}
-                onChange={(e) => setType(e.target.value as any)}
-                className="w-full bg-[#020B18] border border-[#ffffff0c] py-2.5 px-3 rounded text-white font-medium focus:outline-none focus:border-[#F4B400]/50 mt-1 cursor-pointer"
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value)}
+                className="w-full bg-[#020B18] border border-[#ffffff0c] py-2.5 px-3 rounded text-white font-medium focus:outline-none focus:border-[#FFC107]/50 mt-1 cursor-pointer"
               >
-                <option value="discount_percentage">Generic Percentage Off Coupon</option>
-                <option value="free_ride">Strict 100% Free Trip Campaign Limit</option>
+                {SERVICE_TYPES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
 
-            {type === 'discount_percentage' && (
-              <div className="grid grid-cols-2 gap-3.5">
-                <div>
-                  <label className="text-slate-505 font-bold uppercase block text-[#AAB6C5]">Discount Value (%)</label>
-                  <input
-                    type="number"
-                    value={discountValue || ''}
-                    onChange={(e) => setDiscountValue(Number(e.target.value))}
-                    className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white mt-1 focus:outline-none focus:border-[#F4B400]/50"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-505 font-bold uppercase block text-[#AAB6C5]">Max Discount PKR</label>
-                  <input
-                    type="number"
-                    value={maxDiscount || ''}
-                    onChange={(e) => setMaxDiscount(Number(e.target.value))}
-                    className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white mt-1 focus:outline-none focus:border-[#F4B400]/50"
-                  />
-                </div>
-              </div>
-            )}
+            <div>
+              <label className="text-slate-510 font-bold uppercase block text-[#AAB6C5]">Total Free-Ride Quota</label>
+              <input
+                type="number"
+                required
+                value={totalQuota || ''}
+                onChange={(e) => setTotalQuota(Number(e.target.value))}
+                className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white mt-1 focus:outline-none"
+              />
+            </div>
 
-            <div className="grid grid-cols-2 gap-3.5">
-              <div>
-                <label className="text-slate-510 font-bold uppercase block text-[#AAB6C5]">Limit (Total Cap)</label>
-                <input
-                  type="number"
-                  required
-                  value={totalLimit || ''}
-                  onChange={(e) => setTotalLimit(Number(e.target.value))}
-                  className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white mt-1 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-slate-510 font-bold uppercase block text-[#AAB6C5]">Expiration Limit</label>
-                <input
-                  type="date"
-                  required
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white mt-1 focus:outline-none"
-                />
-              </div>
+            <div>
+              <label className="text-slate-510 font-bold uppercase block text-[#AAB6C5]">Ends On</label>
+              <input
+                type="date"
+                required
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+                className="w-full bg-[#020B18] border border-[#ffffff0c] py-2 px-3 rounded text-white mt-1 focus:outline-none"
+              />
             </div>
 
             <div className="bg-[#020B18] p-2.5 rounded text-[11px] text-slate-500 flex items-start space-x-2 border border-[#ffffff0c] mt-1">
-              <AlertCircle className="w-4 h-4 text-[#F4B400] mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 flex-shrink-0" />
               <span>
-                Free ride campaigns enforce strict non-relational quotas (maximum cumulative caps company-wide) to protect financial cash indexes from system abuse.
+                Free ride campaigns enforce strict cumulative quota caps company-wide to protect financial cash indexes from system abuse.
               </span>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-black py-2.5 rounded-lg text-xs transition uppercase tracking-wider cursor-pointer font-bold"
+              className="w-full bg-[#FFC107] hover:bg-[#FFD54F] text-[#020B18] font-black py-2.5 rounded-lg text-xs transition uppercase tracking-wider cursor-pointer font-bold"
             >
-              Issue Promotion Coupon
+              Launch Campaign
             </button>
           </form>
         </div>

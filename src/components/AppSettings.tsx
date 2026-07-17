@@ -47,8 +47,16 @@ export const AppSettings: React.FC = () => {
   const loadSettingsData = async () => {
     try {
       setLoading(true);
+      // app_settings is a generic key/value TEXT store, so every value comes
+      // back as the string "true"/"false" — without coercion, the string
+      // "false" is truthy and every toggle would render as locked after a
+      // reload regardless of its real saved value.
       const data = await api.get('/api/admin/settings/maintenance');
-      setAppStates(data);
+      setAppStates({
+        customerAppMaintenance: data?.customerAppMaintenance === true || data?.customerAppMaintenance === 'true',
+        riderAppMaintenance: data?.riderAppMaintenance === true || data?.riderAppMaintenance === 'true',
+        restaurantAppMaintenance: data?.restaurantAppMaintenance === true || data?.restaurantAppMaintenance === 'true',
+      });
     } catch {
       setAppStates({
         customerAppMaintenance: false,
@@ -187,7 +195,7 @@ export const AppSettings: React.FC = () => {
       {/* Page Header */}
       <div className="border-b border-[#ffffff0c] pb-5">
         <h1 className="text-xl font-black text-white tracking-tight flex items-center">
-          <Settings className="w-6 h-6 mr-2 text-[#F4B400]" /> App Settings & Branding
+          <Settings className="w-6 h-6 mr-2 text-[#FFC107]" /> App Settings & Branding
         </h1>
         <p className="text-[#AAB6C5] text-xs mt-1">
           Configure emergency shut-offs, schedule platform-wide maintenance locks, and customize corporate brand assets dynamically.
@@ -195,7 +203,7 @@ export const AppSettings: React.FC = () => {
       </div>
 
       {successMsg && (
-        <div className="bg-[#F4B400]/10 border border-[#F4B400]/20 text-[#F4B400] p-3.5 rounded-xl text-xs font-semibold">
+        <div className="bg-[#FFC107]/10 border border-[#FFC107]/20 text-[#FFC107] p-3.5 rounded-xl text-xs font-semibold">
           {successMsg}
         </div>
       )}
@@ -210,7 +218,7 @@ export const AppSettings: React.FC = () => {
       <form onSubmit={handleSaveMaintenance} className="bg-[#061B35] rounded-xl border border-[#ffffff0c] p-6 space-y-6 shadow-xl">
         <div className="space-y-4">
           <h2 className="text-white font-bold text-xs uppercase tracking-wider border-b border-[#ffffff0c] pb-2 flex items-center">
-            <Cpu className="w-4.5 h-4.5 mr-1.5 text-[#F4B400]" /> Application Safety Controls
+            <Cpu className="w-4.5 h-4.5 mr-1.5 text-[#FFC107]" /> Application Safety Controls
           </h2>
 
           <div className="space-y-4 pt-1.5">
@@ -290,7 +298,7 @@ export const AppSettings: React.FC = () => {
 
         <div className="border-t border-[#ffffff0c] pt-5 flex items-center justify-between gap-4">
           <div className="flex items-start space-x-2 text-[11px] text-slate-500 max-w-lg">
-            <ShieldAlert className="w-4.5 h-4.5 text-[#F4B400] flex-shrink-0 mt-0.5" />
+            <ShieldAlert className="w-4.5 h-4.5 text-[#FFC107] flex-shrink-0 mt-0.5" />
             <span>
               Configuring online statuses modifies the raw configuration parameters. Ensure caution before forcing active system blocks.
             </span>
@@ -298,7 +306,7 @@ export const AppSettings: React.FC = () => {
 
           <button
             type="submit"
-            className="bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-bold py-2.5 px-6 rounded-lg text-xs tracking-wider uppercase flex items-center shadow-lg whitespace-nowrap cursor-pointer transition"
+            className="bg-[#FFC107] hover:bg-[#FFD54F] text-[#020B18] font-bold py-2.5 px-6 rounded-lg text-xs tracking-wider uppercase flex items-center shadow-lg whitespace-nowrap cursor-pointer transition"
           >
             <Save className="w-4 h-4 mr-2" /> Save App States
           </button>
@@ -309,7 +317,7 @@ export const AppSettings: React.FC = () => {
       <form onSubmit={handleSaveBranding} className="bg-[#061B35] rounded-xl border border-[#ffffff0c] p-6 space-y-6 shadow-xl">
         <div className="space-y-4">
           <h2 className="text-white font-bold text-xs uppercase tracking-wider border-b border-[#ffffff0c] pb-2 flex items-center">
-            <ImageIcon className="w-4.5 h-4.5 mr-1.5 text-[#F4B400]" /> Admin Branding Customize Options
+            <ImageIcon className="w-4.5 h-4.5 mr-1.5 text-[#FFC107]" /> Admin Branding Customize Options
           </h2>
           <p className="text-[#AAB6C5] text-xs leading-relaxed">
             Customize the administrator interface logos. Upload PNG files under 2MB. Saved modifications will replace default static assets instantly.
@@ -355,7 +363,7 @@ export const AppSettings: React.FC = () => {
 
                     <div className="flex flex-col space-y-2 w-full">
                       {/* Input file trigger */}
-                      <label className="bg-[#061B35] hover:bg-slate-800 border border-[#ffffff0c] text-white hover:text-[#F4B400] text-[11px] font-bold px-3 py-1.5 rounded flex items-center justify-center space-x-1.5 cursor-pointer text-center transition">
+                      <label className="bg-[#061B35] hover:bg-slate-800 border border-[#ffffff0c] text-white hover:text-[#FFC107] text-[11px] font-bold px-3 py-1.5 rounded flex items-center justify-center space-x-1.5 cursor-pointer text-center transition">
                         <Upload className="w-3.5 h-3.5" />
                         <span>{currentSrc ? 'Replace Logo' : 'Upload PNG'}</span>
                         <input 
@@ -392,7 +400,7 @@ export const AppSettings: React.FC = () => {
 
           <button
             type="submit"
-            className="bg-[#F4B400] hover:bg-[#FFD766] text-[#020B18] font-bold py-2.5 px-8 rounded-lg text-xs tracking-wider uppercase flex items-center shadow-lg whitespace-nowrap cursor-pointer transition"
+            className="bg-[#FFC107] hover:bg-[#FFD54F] text-[#020B18] font-bold py-2.5 px-8 rounded-lg text-xs tracking-wider uppercase flex items-center shadow-lg whitespace-nowrap cursor-pointer transition"
           >
             <Check className="w-4 h-4 mr-2" /> Save Branding Settings
           </button>

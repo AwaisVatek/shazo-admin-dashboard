@@ -1,24 +1,54 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
-import { 
-  Navigation, User, Bike, Car, Flame, Shield, MapPin, 
-  Send, AlertCircle, RefreshCw, XCircle, Settings 
+import {
+  Navigation, User, Bike, Car, Flame, Shield, MapPin,
+  Send, AlertCircle, RefreshCw, XCircle, Settings
 } from 'lucide-react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+// Mapbox is this product's only maps provider — no Google Maps.
+import { Map, Marker } from 'react-map-gl/mapbox';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
-const API_KEY = import.meta.env.VITE_MAPS_API_KEY || '';
-const hasValidKey = Boolean(API_KEY) && API_KEY !== 'replace_with_shazo_frontend_maps_key';
+// This must be a PUBLIC (pk.) Mapbox token — never the secret (sk.) token used
+// server-side, since this bundle ships to the browser. Needs a real value from
+// the Mapbox account; there's a graceful fallback grid below if unconfigured.
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+const hasValidKey = Boolean(MAPBOX_TOKEN) && MAPBOX_TOKEN !== 'replace_with_shazo_public_mapbox_token';
 
+// GET /api/dispatch/active returns raw rows from three different tables
+// (ride_bookings / food_orders / ambulance_bookings), tagged with a
+// request_type field — not a single normalized camelCase shape. This
+// interface reflects the real superset of fields actually present.
 interface DispatchRequest {
   id: string;
-  customerName: string;
-  serviceType: 'bike' | 'car' | 'ambulance' | 'food';
-  status: 'pending_rider_match' | 'assigned' | 'trip_started' | 'completed';
-  pickupAddress: string;
-  dropoffAddress: string;
-  timestamp: string;
-  riderId?: string;
-  riderName?: string;
+  request_type: 'ride' | 'food_order' | 'ambulance';
+  customer_name?: string;
+  customer_phone?: string;
+  service_type?: string; // rides only (bike/car/rickshaw/...)
+  status: string; // 'requested' | 'ordered' | 'dispatched' | 'arrived' | ...
+  pickup_address?: string;
+  dropoff_address?: string; // rides
+  delivery_address?: string; // food_orders
+  hospital_address?: string; // ambulance
+  created_at: string;
+  rider_id?: string;
+}
+
+function displayServiceType(req: DispatchRequest): 'bike' | 'car' | 'ambulance' | 'food' {
+  if (req.request_type === 'food_order') return 'food';
+  if (req.request_type === 'ambulance') return 'ambulance';
+  return (req.service_type === 'bike' ? 'bike' : 'car');
+}
+
+function displayDestination(req: DispatchRequest): string {
+  return req.dropoff_address || req.delivery_address || req.hospital_address || '';
+}
+
+// /api/dispatch/active only ever returns items still needing a rider
+// (rider_id IS NULL for rides/food; dispatched/arrived ambulance can still
+// show with rider_id set) — there's no separate "assigned"/"trip_started"
+// stage represented in this endpoint's data.
+function isUnassigned(req: DispatchRequest): boolean {
+  return !req.rider_id;
 }
 
 export const LiveDispatch: React.FC = () => {
@@ -30,18 +60,6 @@ export const LiveDispatch: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [mapAuthError, setMapAuthError] = useState<boolean>(false);
 
-  // Hook global Google Maps authentication failure handler
-  useEffect(() => {
-    (window as any).gm_authFailure = () => {
-      console.warn("Google Maps credentials rejected, RefererNotAllowedMapError, or limit reached.");
-      setMapAuthError(true);
-    };
-    return () => {
-      try {
-        delete (window as any).gm_authFailure;
-      } catch (e) {}
-    };
-  }, []);
   const loadData = async () => {
     try {
       setLoading(true);
@@ -143,48 +161,49 @@ export const LiveDispatch: React.FC = () => {
             </div>
           ) : (
             requests.map(req => {
-              const isUnassigned = req.status === 'pending_rider_match';
+              const unassigned = isUnassigned(req);
+              const serviceType = displayServiceType(req);
               return (
-                <div 
-                  key={req.id} 
+                <div
+                  key={req.id}
                   onClick={() => setSelectedRequest(req)}
                   className={`p-4 rounded-xl border transition cursor-pointer ${
-                    selectedRequest?.id === req.id 
-                      ? 'border-emerald-500 bg-emerald-500/5' 
-                      : isUnassigned ? 'border-amber-500/40 bg-amber-500/5' : 'border-slate-800 bg-brand-navy-800'
+                    selectedRequest?.id === req.id
+                      ? 'border-emerald-500 bg-emerald-500/5'
+                      : unassigned ? 'border-amber-500/40 bg-amber-500/5' : 'border-slate-800 bg-brand-navy-800'
                   }`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-xs font-bold text-slate-400 block">{req.id}</span>
-                      <h3 className="text-white font-bold text-sm mt-1">{req.customerName}</h3>
+                      <h3 className="text-white font-bold text-sm mt-1">{req.customer_name}</h3>
                     </div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      req.serviceType === 'ambulance' ? 'bg-rose-500/15 text-rose-400' :
-                      req.serviceType === 'food' ? 'bg-amber-500/15 text-amber-400' :
-                      req.serviceType === 'car' ? 'bg-indigo-500/15 text-indigo-400' : 'bg-emerald-500/15 text-emerald-400'
+                      serviceType === 'ambulance' ? 'bg-rose-500/15 text-rose-400' :
+                      serviceType === 'food' ? 'bg-amber-500/15 text-amber-400' :
+                      serviceType === 'car' ? 'bg-indigo-500/15 text-indigo-400' : 'bg-emerald-500/15 text-emerald-400'
                     }`}>
-                      {req.serviceType}
+                      {serviceType}
                     </span>
                   </div>
 
                   <div className="mt-3 space-y-1.5 text-xs text-slate-400">
                     <div className="flex items-center">
                       <MapPin className="w-3.5 h-3.5 text-slate-500 mr-1.5 flex-shrink-0" />
-                      <span className="truncate">{req.pickupAddress}</span>
+                      <span className="truncate">{req.pickup_address}</span>
                     </div>
                     <div className="flex items-center">
                       <Navigation className="w-3.5 h-3.5 text-emerald-500 mr-1.5 flex-shrink-0" />
-                      <span className="truncate">{req.dropoffAddress}</span>
+                      <span className="truncate">{displayDestination(req)}</span>
                     </div>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-800/40 flex justify-between items-center text-xs">
-                    <span className="text-slate-500">{req.timestamp}</span>
-                    {isUnassigned ? (
+                    <span className="text-slate-500">{new Date(req.created_at).toLocaleTimeString()}</span>
+                    {unassigned ? (
                       <span className="text-amber-400 font-bold animate-pulse">Assign Rider</span>
                     ) : (
-                      <span className="text-emerald-400 font-medium">Driver: {req.riderName}</span>
+                      <span className="text-emerald-400 font-medium">Assigned ({req.status})</span>
                     )}
                   </div>
                 </div>
@@ -201,7 +220,7 @@ export const LiveDispatch: React.FC = () => {
             <div className="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
                 <h2 className="text-white font-bold text-base">Assign Driver for {selectedRequest.id}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Pickup: {selectedRequest.pickupAddress}</p>
+                <p className="text-xs text-slate-400 mt-0.5">Pickup: {selectedRequest.pickup_address}</p>
               </div>
               <button onClick={() => setSelectedRequest(null)} className="text-slate-400 hover:text-white text-xs">Close</button>
             </div>
@@ -212,7 +231,7 @@ export const LiveDispatch: React.FC = () => {
               </h3>
               <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                 {nearbyRiders
-                  .filter(r => r.service === selectedRequest.serviceType || selectedRequest.serviceType === 'ambulance')
+                  .filter(r => r.service === displayServiceType(selectedRequest) || displayServiceType(selectedRequest) === 'ambulance')
                   .map(rider => (
                     <div key={rider.id} className="bg-slate-900/60 p-3 rounded-lg border border-slate-800 flex justify-between items-center">
                       <div>
@@ -251,42 +270,46 @@ export const LiveDispatch: React.FC = () => {
         {/* Live coordinate tracking canvas representation */}
         <div className="bg-brand-navy-800 rounded-xl border border-slate-800 overflow-hidden relative" style={{ height: '360px' }}>
           {hasValidKey && !mapAuthError ? (
-            <APIProvider apiKey={API_KEY} version="weekly text-xs">
-              <Map
-                defaultCenter={{ lat: 24.8607, lng: 67.0011 }}
-                defaultZoom={13}
-                mapId="DISPATCH_MAP_ID"
-                internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-                style={{ width: '100%', height: '100%' }}
-              >
-                {nearbyRiders.map(rider => (
-                  <AdvancedMarker key={rider.id} position={{ lat: rider.lat, lng: rider.lng }} title={rider.name}>
-                    <Pin 
-                      background={rider.service === 'ambulance' ? '#f43f5e' : '#10b981'} 
-                      glyphColor="#fff" 
-                    />
-                  </AdvancedMarker>
-                ))}
-              </Map>
-            </APIProvider>
+            <Map
+              mapboxAccessToken={MAPBOX_TOKEN}
+              initialViewState={{ longitude: 67.0011, latitude: 24.8607, zoom: 13 }}
+              mapStyle="mapbox://styles/mapbox/dark-v11"
+              style={{ width: '100%', height: '100%' }}
+              onError={() => setMapAuthError(true)}
+            >
+              {nearbyRiders.map(rider => (
+                <Marker key={rider.id} longitude={rider.lng} latitude={rider.lat}>
+                  <div
+                    title={rider.name}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      border: '2px solid #fff',
+                      background: rider.service === 'ambulance' ? '#f43f5e' : '#10b981',
+                    }}
+                  />
+                </Marker>
+              ))}
+            </Map>
           ) : (
             <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center p-6 relative">
               <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
               <div className="relative text-center max-w-sm z-10 space-y-3">
                 <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-1 border border-slate-700">
-                  <Settings className="w-6 h-6 text-[#F4B400] animate-spin" />
+                  <Settings className="w-6 h-6 text-[#FFC107] animate-spin" />
                 </div>
                 
                 {mapAuthError ? (
                   <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-lg text-left text-[11px] leading-normal text-amber-400">
-                    <span className="font-bold text-white block mb-0.5">Google Maps Referer API Error Detected</span>
-                    The loaded key returned <code>RefererNotAllowedMapError</code>. Please ensure HTTP referrer restrictions for your API credentials allow requests from this app's hostname. Falling back to the localized grid format.
+                    <span className="font-bold text-white block mb-0.5">Mapbox Token Error</span>
+                    The configured Mapbox token was rejected. Confirm it's a valid public (<code>pk.</code>) token for this domain. Falling back to the localized grid format.
                   </div>
                 ) : (
                   <>
                     <h4 className="text-sm font-bold text-white mb-1">Visual Pakistan operational grid</h4>
                     <p className="text-xs text-slate-400">
-                      Configure your maps credentials in settings secret <code>VITE_MAPS_API_KEY</code> to enable overlay.
+                      Configure a public Mapbox token in <code>VITE_MAPBOX_TOKEN</code> to enable the live map overlay.
                     </p>
                   </>
                 )}

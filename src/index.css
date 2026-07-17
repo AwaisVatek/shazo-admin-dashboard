@@ -4,8 +4,9 @@
   --color-brand-navy: #061B35;
   --color-brand-deep-navy: #020B18;
   --color-brand-secondary-navy: #0B2A4A;
-  --color-brand-gold: #F4B400;
-  --color-brand-light-gold: #FFD766;
+  /* Same yellow as the customer/rider apps' brand accent (was #F4B400 gold before). */
+  --color-brand-gold: #FFC107;
+  --color-brand-light-gold: #FFD54F;
   --color-brand-white: #FFFFFF;
   --color-brand-muted-text: #AAB6C5;
   --color-brand-navy-50: #f4f6fa;

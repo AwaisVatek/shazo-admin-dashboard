@@ -5,15 +5,19 @@ import {
   MapPin, Check, AlertCircle, Eye, CornerDownRight 
 } from 'lucide-react';
 
+// Field names match GET /api/admin/customers exactly. Note: the backend has
+// no distinct "blocked" state — is_verified is a single boolean, so a
+// "blocked" customer round-trips back to status 'pending' on next load, not
+// 'blocked'. That's a real backend limitation, not fixed here.
 interface Customer {
   id: string;
   name: string;
   phone: string;
   email: string;
-  status: 'active' | 'blocked';
+  status: 'active' | 'pending';
   rating: number;
-  ridesCount: number;
-  joinedAt: string;
+  completed_rides_count: number;
+  created_at: string;
 }
 
 export const CustomersList: React.FC = () => {
@@ -130,7 +134,7 @@ export const CustomersList: React.FC = () => {
                       </div>
                       <div>
                         <span className="text-white font-semibold block">{cust.name}</span>
-                        <span className="text-xs text-slate-500 font-mono block">{cust.id} • Joined {cust.joinedAt}</span>
+                        <span className="text-xs text-slate-500 font-mono block">{cust.id} • Joined {new Date(cust.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </td>
@@ -200,7 +204,7 @@ export const CustomersList: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800/60">
                 <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800/40">
                   <span className="text-xs text-slate-500">Completed Trips</span>
-                  <span className="text-lg font-bold text-white block mt-0.5">{selectedUser.ridesCount}</span>
+                  <span className="text-lg font-bold text-white block mt-0.5">{selectedUser.completed_rides_count}</span>
                 </div>
                 <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800/40">
                   <span className="text-xs text-slate-500">Global Score</span>

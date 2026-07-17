@@ -1,23 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
-import { 
-  Car, Bike, MapPin, User, Navigation, AlertCircle, 
-  DollarSign, Clock, FileSpreadsheet, Eye, Receipt, Calendar 
+import {
+  Car, Bike, MapPin, User, Navigation, AlertCircle,
+  DollarSign, Clock, FileSpreadsheet, Eye, Receipt, Calendar
 } from 'lucide-react';
 
+// Field names match the real ride_bookings columns (+ the customer_name/
+// rider_name aliases GET /api/admin/rides joins in) exactly — this used to be
+// a guessed camelCase shape that never matched the actual API response.
 interface Ride {
   id: string;
-  customerName: string;
-  riderName: string;
-  vehicleType: 'bike' | 'car';
-  pickup: string;
-  dropoff: string;
-  status: 'pending' | 'accepted' | 'started' | 'completed' | 'cancelled';
-  fare: number;
-  commission: number;
-  paymentMethod: 'cash' | 'wallet';
-  createdAt: string;
+  customer_name: string;
+  rider_name: string | null;
+  vehicle_category: string;
+  service_type: string;
+  pickup_address: string;
+  dropoff_address: string;
+  status: 'requested' | 'accepted' | 'arrived' | 'in_transit' | 'completed' | 'cancelled';
+  total_fare: number;
+  commission_amount: number;
+  payment_method: 'cash' | 'wallet';
+  created_at: string;
 }
+
+const STATUS_TABS = ['all', 'requested', 'accepted', 'arrived', 'in_transit', 'completed', 'cancelled'];
 
 export const RidesList: React.FC = () => {
   const [rides, setRides] = useState<Ride[]>([]);
@@ -58,6 +64,8 @@ export const RidesList: React.FC = () => {
     return r.status === filter;
   });
 
+  const isBike = (r: Ride) => r.vehicle_category === 'bike' || r.service_type === 'bike';
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center border-b border-slate-800 pb-5">
@@ -75,13 +83,13 @@ export const RidesList: React.FC = () => {
 
       {/* Status filter tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-800/40 pb-3">
-        {['all', 'pending', 'accepted', 'started', 'completed', 'cancelled'].map(tab => (
+        {STATUS_TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
             className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition ${
-              filter === tab 
-                ? 'bg-emerald-500 text-brand-navy-950 font-black' 
+              filter === tab
+                ? 'bg-emerald-500 text-brand-navy-950 font-black'
                 : 'text-slate-400 bg-slate-900/40 hover:text-white'
             }`}
           >
@@ -114,27 +122,27 @@ export const RidesList: React.FC = () => {
                 <tr key={ride.id} className="hover:bg-slate-900/40 transition">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
-                      {ride.vehicleType === 'bike' ? <Bike className="w-4 h-4 text-indigo-400" /> : <Car className="w-4 h-4 text-emerald-400" />}
+                      {isBike(ride) ? <Bike className="w-4 h-4 text-indigo-400" /> : <Car className="w-4 h-4 text-emerald-400" />}
                       <div>
                         <span className="text-white font-semibold font-mono text-xs block">{ride.id}</span>
-                        <span className="text-[10px] text-slate-500 flex items-center mt-0.5"><Clock className="w-3 h-3 mr-1" /> {ride.createdAt}</span>
+                        <span className="text-[10px] text-slate-500 flex items-center mt-0.5"><Clock className="w-3 h-3 mr-1" /> {new Date(ride.created_at).toLocaleString()}</span>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-xs font-medium">
-                    <div className="text-white">Cust: {ride.customerName}</div>
-                    <div className="text-slate-400 mt-0.5">Rider: {ride.riderName}</div>
+                    <div className="text-white">Cust: {ride.customer_name}</div>
+                    <div className="text-slate-400 mt-0.5">Rider: {ride.rider_name || '—'}</div>
                   </td>
                   <td className="px-6 py-4 text-xs max-w-xs truncate text-slate-400">
-                    <div className="flex items-center"><MapPin className="w-3.5 h-3.5 mr-1 text-slate-500 flex-shrink-0" /> <span className="truncate">{ride.pickup}</span></div>
-                    <div className="flex items-center mt-1"><Navigation className="w-3.5 h-3.5 mr-1 text-emerald-500 flex-shrink-0" /> <span className="truncate">{ride.dropoff}</span></div>
+                    <div className="flex items-center"><MapPin className="w-3.5 h-3.5 mr-1 text-slate-500 flex-shrink-0" /> <span className="truncate">{ride.pickup_address}</span></div>
+                    <div className="flex items-center mt-1"><Navigation className="w-3.5 h-3.5 mr-1 text-emerald-500 flex-shrink-0" /> <span className="truncate">{ride.dropoff_address}</span></div>
                   </td>
                   <td className="px-6 py-4 text-center font-mono text-xs">
-                    <span className="text-white block font-bold">{ride.fare} PKR</span>
-                    <span className="text-[10px] text-emerald-500 block mt-0.5">{ride.paymentMethod}</span>
+                    <span className="text-white block font-bold">{ride.total_fare} PKR</span>
+                    <span className="text-[10px] text-emerald-500 block mt-0.5">{ride.payment_method}</span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
+                    <button
                       onClick={() => setSelectedRide(ride)}
                       className="text-slate-400 hover:text-white p-1.5 rounded hover:bg-slate-800"
                     >
@@ -157,14 +165,14 @@ export const RidesList: React.FC = () => {
                   <span className="text-xs text-slate-500 font-mono block">{selectedRide.id}</span>
                   <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase mt-1.5 ${
                     selectedRide.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' :
-                    selectedRide.status === 'started' ? 'bg-indigo-500/10 text-indigo-400' :
-                    selectedRide.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-rose-500/10 text-rose-400'
+                    selectedRide.status === 'in_transit' ? 'bg-indigo-500/10 text-indigo-400' :
+                    selectedRide.status === 'requested' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-rose-500/10 text-rose-400'
                   }`}>
                     {selectedRide.status}
                   </span>
                 </div>
                 <div className="p-2 bg-slate-900 rounded-lg">
-                  {selectedRide.vehicleType === 'bike' ? <Bike className="w-5 h-5 text-indigo-400" /> : <Car className="w-5 h-5 text-emerald-400" />}
+                  {isBike(selectedRide) ? <Bike className="w-5 h-5 text-indigo-400" /> : <Car className="w-5 h-5 text-emerald-400" />}
                 </div>
               </div>
 
@@ -175,15 +183,15 @@ export const RidesList: React.FC = () => {
                 <div className="space-y-2 text-xs text-slate-300">
                   <div className="flex justify-between">
                     <span>Base Fare Charge</span>
-                    <span className="font-mono">{selectedRide.fare} PKR</span>
+                    <span className="font-mono">{selectedRide.total_fare} PKR</span>
                   </div>
                   <div className="flex justify-between border-b border-slate-800/40 pb-2">
-                    <span>Admin App Commission (10%)</span>
-                    <span className="font-mono text-emerald-400">+{selectedRide.commission} PKR</span>
+                    <span>Admin App Commission</span>
+                    <span className="font-mono text-emerald-400">+{selectedRide.commission_amount} PKR</span>
                   </div>
                   <div className="flex justify-between font-bold text-sm text-white pt-1">
                     <span>Rider Ledger Payout</span>
-                    <span className="font-mono">{selectedRide.fare - selectedRide.commission} PKR</span>
+                    <span className="font-mono">{selectedRide.total_fare - selectedRide.commission_amount} PKR</span>
                   </div>
                 </div>
               </div>
@@ -197,16 +205,16 @@ export const RidesList: React.FC = () => {
                     <span className="font-bold text-white block">Trip Created</span>
                     <span className="text-slate-500 block">System matched passenger coordinates to nearby driver loops.</span>
                   </div>
-                  {selectedRide.status !== 'pending' && selectedRide.status !== 'cancelled' && (
+                  {selectedRide.status !== 'requested' && selectedRide.status !== 'cancelled' && (
                     <div className="relative">
                       <span className="font-bold text-emerald-400 block">Matched with Driver</span>
-                      <span className="text-slate-500 block">Driver {selectedRide.riderName} accepted routing and coordinates.</span>
+                      <span className="text-slate-500 block">Driver {selectedRide.rider_name || '—'} accepted routing and coordinates.</span>
                     </div>
                   )}
                   {selectedRide.status === 'completed' && (
                     <div className="relative animate-pulse">
                       <span className="font-bold text-emerald-400 block">Journey Completed Successfully</span>
-                      <span className="text-slate-500 block">Fare of {selectedRide.fare} PKR dispatched.</span>
+                      <span className="text-slate-500 block">Fare of {selectedRide.total_fare} PKR dispatched.</span>
                     </div>
                   )}
                 </div>

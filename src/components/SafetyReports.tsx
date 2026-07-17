@@ -2,15 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import { ShieldAlert, MapPin, Eye, Check, Bell, Phone, AlertTriangle, RefreshCw } from 'lucide-react';
 
+// Real safety_reports columns (reporter_id/ride_id/report_type/severity/
+// status/resolved_by/resolved_at) + a joined reporter_name/reporter_role —
+// the table only stores reporter_id, no display name of its own.
 interface SafetyIncident {
   id: string;
-  tripId: string;
-  triggerBy: 'passenger' | 'driver';
-  reporterName: string;
+  ride_id: string | null;
+  reporter_name: string | null;
+  reporter_role: string;
+  report_type: string;
   description: string;
-  severity: 'high' | 'critical';
-  status: 'active' | 'investigating' | 'resolved';
-  timestamp: string;
+  severity: string;
+  status: string;
+  created_at: string;
 }
 
 export const SafetyReports: React.FC = () => {
@@ -117,17 +121,17 @@ export const SafetyReports: React.FC = () => {
                     <AlertTriangle className="w-4 h-4 mr-1 text-rose-500" /> {inc.id}
                   </td>
                   <td className="px-6 py-4 text-xs">
-                    <span className="text-white block font-semibold">{inc.reporterName}</span>
-                    <span className="text-[10px] text-slate-500 block uppercase font-bold mt-1">{inc.triggerBy}</span>
+                    <span className="text-white block font-semibold">{inc.reporter_name || 'Unknown user'}</span>
+                    <span className="text-[10px] text-slate-500 block uppercase font-bold mt-1">{inc.reporter_role}</span>
                   </td>
                   <td className="px-6 py-4 font-mono text-xs text-slate-400">
-                    {inc.tripId}
+                    {inc.ride_id || '—'}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      inc.severity === 'critical' ? 'bg-rose-500/15 text-rose-450 text-rose-400 animate-pulse' : 'bg-amber-500/15 text-yellow-500'
+                      inc.severity === 'critical' || inc.severity === 'high' ? 'bg-rose-500/15 text-rose-400 animate-pulse' : 'bg-amber-500/15 text-yellow-500'
                     }`}>
-                      {inc.severity}
+                      {inc.severity || 'unspecified'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -151,9 +155,9 @@ export const SafetyReports: React.FC = () => {
         {selectedInc ? (
           <div className="space-y-4 text-xs">
             <div className="border-b border-[#ffffff0c] pb-3">
-              <span className="text-xs text-slate-500 font-mono block">{selectedInc.id} • {selectedInc.timestamp}</span>
-              <h3 className="text-sm font-extrabold text-white mt-1">Incident Report on {selectedInc.tripId}</h3>
-              <p className="text-xs text-rose-400 mt-1">Initiator: {selectedInc.reporterName}</p>
+              <span className="text-xs text-slate-500 font-mono block">{selectedInc.id} • {new Date(selectedInc.created_at).toLocaleString()}</span>
+              <h3 className="text-sm font-extrabold text-white mt-1">Incident Report on {selectedInc.ride_id || 'N/A'}</h3>
+              <p className="text-xs text-rose-400 mt-1">Initiator: {selectedInc.reporter_name || 'Unknown user'} ({selectedInc.report_type})</p>
             </div>
 
             <div className="bg-[#020B18] p-3.5 rounded-lg border border-[#ffffff0c] text-xs text-slate-400 whitespace-pre-line leading-relaxed">
